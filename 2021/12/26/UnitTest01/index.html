@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"teddy1565.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="簡介 Intro這陣子為了交付各項文件，以及為了往後系統開發的流暢，接觸了許多DevOps相關的技術 本次章節打算來說一說Jest與supertest搭配Github Action的組合應用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Jest與supertest搭配Github Action單元測試及CI應用 - 第三方模組依賴解決方案">
+<meta property="og:url" content="https://teddy1565.github.io/2021/12/26/UnitTest01/index.html">
+<meta property="og:site_name" content="JING-TING XIONG Blog">
+<meta property="og:description" content="簡介 Intro這陣子為了交付各項文件，以及為了往後系統開發的流暢，接觸了許多DevOps相關的技術 本次章節打算來說一說Jest與supertest搭配Github Action的組合應用">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://teddy1565.github.io/images/unitTest/01/jest_success.jpg">
+<meta property="article:published_time" content="2021-12-26T00:40:30.000Z">
+<meta property="article:modified_time" content="2025-06-16T11:23:00.405Z">
+<meta property="article:author" content="teddy1565">
+<meta property="article:tag" content="DevOps">
+<meta property="article:tag" content="CI&#x2F;CD">
+<meta property="article:tag" content="CI">
+<meta property="article:tag" content="Github">
+<meta property="article:tag" content="Github Action">
+<meta property="article:tag" content="Jest">
+<meta property="article:tag" content="suptertest">
+<meta property="article:tag" content="Unit Test">
+<meta property="article:tag" content="axios">
+<meta property="article:tag" content="socket.io">
+<meta property="article:tag" content="mqtt">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://teddy1565.github.io/images/unitTest/01/jest_success.jpg">
+
+<link rel="canonical" href="https://teddy1565.github.io/2021/12/26/UnitTest01/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-TW'
+  };
+</script>
+
+  <title>Jest與supertest搭配Github Action單元測試及CI應用 - 第三方模組依賴解決方案 | JING-TING XIONG Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">JING-TING XIONG Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>關於</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://teddy1565.github.io/2021/12/26/UnitTest01/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="teddy1565">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="JING-TING XIONG Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Jest與supertest搭配Github Action單元測試及CI應用 - 第三方模組依賴解決方案
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">發表於</span>
+
+              <time title="創建時間：2021-12-26 08:40:30" itemprop="dateCreated datePublished" datetime="2021-12-26T08:40:30+08:00">2021-12-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新於</span>
+                <time title="修改時間：2025-06-16 19:23:00" itemprop="dateModified" datetime="2025-06-16T19:23:00+08:00">2025-06-16</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="簡介-Intro"><a href="#簡介-Intro" class="headerlink" title="簡介 Intro"></a>簡介 Intro</h2><p>這陣子為了交付各項文件，以及為了往後系統開發的流暢，接觸了許多DevOps相關的技術</p>
+<p>本次章節打算來說一說Jest與supertest搭配Github Action的組合應用</p>
+<span id="more"></span>
+
+<hr>
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在網路上有很多關於DevOps、CI/CD相關的呼聲，幾乎快跟雲平台、AI名詞爛大街了</p>
+<p>但實際上能夠參考的中文文章有限，很多都只是淺嘗即止。</p>
+<p>不然就都是全英文的文章，對於我這種野生開發者來說，實在是太吃力了。</p>
+<p>(良心建議英文要學好RRRRRRR)</p>
+<p>那接續上一篇關於JSDoc的文章，這次打算介紹的是Jest+supertest進行單元測試</p>
+<p>並且介紹Github Action的配置，但整體而言內容會很多，所以這個主題可能會分多篇文章寫完</p>
+<h2 id="技術使用簡介"><a href="#技術使用簡介" class="headerlink" title="技術使用簡介"></a>技術使用簡介</h2><h3 id="Jest"><a href="#Jest" class="headerlink" title="Jest"></a>Jest</h3><p>Jest是由Facebook維護的JavaScript測試框架，由Christoph Nakazawa設計和構建，重點是簡化和支持大型Web應用程序。…</p>
+<p><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Jest_(JavaScript_framework)">介紹可以點我直接連結到維基百科去看</a></p>
+<h3 id="supertest"><a href="#supertest" class="headerlink" title="supertest"></a>supertest</h3><p>supertest是一個用來模擬Http Request的套件，用來測試webserver實很實用</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/visionmedia/supertest#readme">官方文件</a></p>
+<h3 id="Github-Action"><a href="#Github-Action" class="headerlink" title="Github Action"></a>Github Action</h3><p>雖然本次文章不會說到這個階段，但還是附上官方文件連結</p>
+<p><a target="_blank" rel="noopener" href="https://docs.github.com/en/actions">官方文件</a></p>
+<hr>
+<h2 id="單元測試"><a href="#單元測試" class="headerlink" title="單元測試"></a>單元測試</h2><p>好啦~ 由於本人精力與時間都實在有限就直接切入正題</p>
+<p>當我們的專案隨越來越大時，所使用的套件也會越來越多</p>
+<p>不論是自己寫的模組也好，還是引用外部的第三方模組</p>
+<p>跟著主流的中文單元測試教學文件都會遇到一個問題</p>
+<p>Jest在進行測試時，會因為無法正常處理axios、socket.io-client、mqtt</p>
+<p>導致單元測試失效，要解決這個問題還得回到<a target="_blank" rel="noopener" href="https://jestjs.io/docs/mock-functions">官方文檔</a></p>
+<p>簡單來說，在Jest的測試框架環境下，我們需要使用他所提供的mock模擬一個假的元件騙自己</p>
+<h3 id="程式碼模擬"><a href="#程式碼模擬" class="headerlink" title="程式碼模擬"></a>程式碼模擬</h3><p>假設我們的routes/index.js內容如下:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> express = <span class="built_in">require</span>(<span class="string">&quot;express&quot;</span>);</span><br><span class="line"><span class="keyword">const</span> router = express.Router();</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> axios = <span class="built_in">require</span>(<span class="string">&quot;axios&quot;</span>);</span><br><span class="line"></span><br><span class="line">axios.post(<span class="string">&quot;URL&quot;</span>,payload).then(<span class="function">(<span class="params">response</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">console</span>.log(response.data);</span><br><span class="line">&#125;).catch(<span class="function">(<span class="params">error</span>)=&gt;</span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(error);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">router.get(<span class="string">&quot;/&quot;</span>,<span class="keyword">async</span> (req,res,next) =&gt; &#123;</span><br><span class="line">    res.staus(<span class="number">200</span>).send(<span class="string">&quot;hello world&quot;</span>);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>然後我們的example.test.js的內容為:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> supertest = <span class="built_in">require</span>(<span class="string">&quot;supertest&quot;</span>);</span><br><span class="line"><span class="keyword">const</span> path = <span class="built_in">require</span>(<span class="string">&quot;path&quot;</span>);</span><br><span class="line"><span class="keyword">const</span> app = <span class="built_in">require</span>(path.join(__dirname,<span class="string">&quot;..&quot;</span>,<span class="string">&quot;app.js&quot;</span>));</span><br><span class="line"><span class="keyword">const</span> request = supertest(app);</span><br><span class="line"></span><br><span class="line">describe(<span class="string">&quot;Simple Unit Test&quot;</span>,<span class="function">()=&gt;</span>&#123;</span><br><span class="line">    test(<span class="string">&quot;GET /&quot;</span>,<span class="function">(<span class="params">done</span>) =&gt;</span> &#123;</span><br><span class="line">        request.get(<span class="string">&quot;/&quot;</span>).end(<span class="function">(<span class="params">err,res</span>)=&gt;</span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (err) &#123;</span><br><span class="line">                <span class="built_in">console</span>.log(err);</span><br><span class="line">                done.fail(err);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="built_in">console</span>.log(res.status); <span class="comment">//should be 200</span></span><br><span class="line">                done(); <span class="comment">//記得測試結束要呼叫done，失敗要呼叫done.fail(err) 阿不然你的測試不會結束然後就timeout當作失敗了</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>我們的package.json配置:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;scripts&quot;</span>:&#123;</span><br><span class="line">        <span class="attr">&quot;start&quot;</span>: <span class="string">&quot;node ./bin/www&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;test&quot;</span>: <span class="string">&quot;jest&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">&quot;jest&quot;</span>:&#123;</span><br><span class="line">        <span class="attr">&quot;testTimeout&quot;</span>:<span class="number">10000</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="神奇的錯誤"><a href="#神奇的錯誤" class="headerlink" title="神奇的錯誤"></a>神奇的錯誤</h3><p>然而當我們開開心心運行npm test時，就會跳錯 (這邊有空再附上圖片)</p>
+<p>大概要馬告訴你timeout，不然就是說你可能promise沒結束，又或是說他不認得axios (欠扁!)</p>
+<p>這並不是因為配置出錯，也許他會提示你使用 <strong>–detectOpenHandles</strong> 參數，但其實一點也沒解決問題</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm test -- --detectOpenHandles</span><br></pre></td></tr></table></figure>
+
+<h2 id="解決辦法"><a href="#解決辦法" class="headerlink" title="解決辦法"></a>解決辦法</h2><h3 id="解鈴還須繫鈴人"><a href="#解鈴還須繫鈴人" class="headerlink" title="解鈴還須繫鈴人"></a>解鈴還須繫鈴人</h3><p>而我們需要在*.test.js中(也就是你單元測試的腳本)，進行一些更動</p>
+<p>原本的內容都保持不動，我們要使用jest.mock模擬需要的元件</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> supertest = <span class="built_in">require</span>(<span class="string">&quot;supertest&quot;</span>);</span><br><span class="line"><span class="keyword">const</span> path = <span class="built_in">require</span>(<span class="string">&quot;path&quot;</span>);</span><br><span class="line"><span class="keyword">const</span> app = <span class="built_in">require</span>(path.join(__dirname,<span class="string">&quot;..&quot;</span>,<span class="string">&quot;app.js&quot;</span>));</span><br><span class="line"><span class="keyword">const</span> request = supertest(app);</span><br><span class="line"></span><br><span class="line"><span class="comment">//jest.mock(&quot;axios&quot;); 這樣的話在jest它的視角來說axios = undefined;</span></span><br><span class="line"></span><br><span class="line">jest.mock(<span class="string">&quot;axios&quot;</span>,<span class="function">()=&gt;</span>&#123;<span class="comment">//所以我們需要相對完整的模擬axios的呼叫</span></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="attr">post</span>:<span class="function">()=&gt;</span>&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> <span class="built_in">Promise</span>(<span class="function">(<span class="params">resolve,reject</span>)=&gt;</span>&#123;</span><br><span class="line">                resolve(<span class="literal">true</span>); <span class="comment">//根據每個人的專案不同自行調整，反正我只是要騙jest讓它單純檢查我的webserver而已</span></span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">describe(<span class="string">&quot;Simple Unit Test&quot;</span>,<span class="function">()=&gt;</span>&#123;</span><br><span class="line">    test(<span class="string">&quot;GET /&quot;</span>,<span class="function">(<span class="params">done</span>) =&gt;</span> &#123;</span><br><span class="line">        request.get(<span class="string">&quot;/&quot;</span>).end(<span class="function">(<span class="params">err,res</span>)=&gt;</span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (err) &#123;</span><br><span class="line">                <span class="built_in">console</span>.log(err);</span><br><span class="line">                done.fail(err);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="built_in">console</span>.log(res.status); <span class="comment">//should be 200</span></span><br><span class="line">                done(); <span class="comment">//記得測試結束要呼叫done，失敗要呼叫done.fail(err) 阿不然你的測試不會結束然後就timeout當作失敗了</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="成功解決問題"><a href="#成功解決問題" class="headerlink" title="成功解決問題"></a>成功解決問題</h3><p>將一切存檔之後我們再執行一次給他一個機會</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm test</span><br></pre></td></tr></table></figure>
+
+<p><img src="/images/unitTest/01/jest_success.jpg" alt="終於成功啦"></p>
+<p>還好成功了，不然就要開扁了(誤)</p>
+<p>基本上這是一個比較粗糙的解決辦法，但若是要詳細說明，篇幅實在太長</p>
+<p>往後再慢慢加入解說</p>
+<h2 id="順帶一提"><a href="#順帶一提" class="headerlink" title="順帶一提"></a>順帶一提</h2><h3 id="環境變數傳遞及Jest參數簡述"><a href="#環境變數傳遞及Jest參數簡述" class="headerlink" title="環境變數傳遞及Jest參數簡述"></a>環境變數傳遞及Jest參數簡述</h3><p>當使用npm test進行測試時，可以透過– –param 傳遞環境參數</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">Example1</span></span><br><span class="line">npm test -- --detectOpenHandles</span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">#</span><span class="bash">Example2 執行單一個指定的單元測試腳本</span></span><br><span class="line">npm test -- --runTestsByPath &quot;./__test__/example.test.js&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="結語"><a href="#結語" class="headerlink" title="結語"></a>結語</h2><p>這只是CI/CD的開頭，路漫漫其修遠兮， 吾將上下而求索。</p>
+<p>雖然過聖誕節一天了，還是祝各位開發者佳節愉悅</p>
+<p>也歡迎各位大大指教及交流</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DevOps/" rel="tag"># DevOps</a>
+              <a href="/tags/CI-CD/" rel="tag"># CI/CD</a>
+              <a href="/tags/CI/" rel="tag"># CI</a>
+              <a href="/tags/Github/" rel="tag"># Github</a>
+              <a href="/tags/Github-Action/" rel="tag"># Github Action</a>
+              <a href="/tags/Jest/" rel="tag"># Jest</a>
+              <a href="/tags/suptertest/" rel="tag"># suptertest</a>
+              <a href="/tags/Unit-Test/" rel="tag"># Unit Test</a>
+              <a href="/tags/axios/" rel="tag"># axios</a>
+              <a href="/tags/socket-io/" rel="tag"># socket.io</a>
+              <a href="/tags/mqtt/" rel="tag"># mqtt</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/12/21/jsdoc0001/" rel="prev" title="JSDoc 踩坑日記">
+      <i class="fa fa-chevron-left"></i> JSDoc 踩坑日記
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/06/16/electron-with-angular/" rel="next" title="Electron 開發框架結合Angular與TypeScript">
+      Electron 開發框架結合Angular與TypeScript <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B0%A1%E4%BB%8B-Intro"><span class="nav-number">1.</span> <span class="nav-text">簡介 Intro</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">2.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%80%E8%A1%93%E4%BD%BF%E7%94%A8%E7%B0%A1%E4%BB%8B"><span class="nav-number">3.</span> <span class="nav-text">技術使用簡介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Jest"><span class="nav-number">3.1.</span> <span class="nav-text">Jest</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#supertest"><span class="nav-number">3.2.</span> <span class="nav-text">supertest</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Github-Action"><span class="nav-number">3.3.</span> <span class="nav-text">Github Action</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%96%AE%E5%85%83%E6%B8%AC%E8%A9%A6"><span class="nav-number">4.</span> <span class="nav-text">單元測試</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BC%8F%E7%A2%BC%E6%A8%A1%E6%93%AC"><span class="nav-number">4.1.</span> <span class="nav-text">程式碼模擬</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A5%9E%E5%A5%87%E7%9A%84%E9%8C%AF%E8%AA%A4"><span class="nav-number">4.2.</span> <span class="nav-text">神奇的錯誤</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%B1%BA%E8%BE%A6%E6%B3%95"><span class="nav-number">5.</span> <span class="nav-text">解決辦法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E9%88%B4%E9%82%84%E9%A0%88%E7%B9%AB%E9%88%B4%E4%BA%BA"><span class="nav-number">5.1.</span> <span class="nav-text">解鈴還須繫鈴人</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%88%90%E5%8A%9F%E8%A7%A3%E6%B1%BA%E5%95%8F%E9%A1%8C"><span class="nav-number">5.2.</span> <span class="nav-text">成功解決問題</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A0%86%E5%B8%B6%E4%B8%80%E6%8F%90"><span class="nav-number">6.</span> <span class="nav-text">順帶一提</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%92%B0%E5%A2%83%E8%AE%8A%E6%95%B8%E5%82%B3%E9%81%9E%E5%8F%8AJest%E5%8F%83%E6%95%B8%E7%B0%A1%E8%BF%B0"><span class="nav-number">6.1.</span> <span class="nav-text">環境變數傳遞及Jest參數簡述</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B5%90%E8%AA%9E"><span class="nav-number">7.</span> <span class="nav-text">結語</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">teddy1565</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">42</span>
+        <span class="site-state-item-name">標籤</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">teddy1565</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 強力驅動
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

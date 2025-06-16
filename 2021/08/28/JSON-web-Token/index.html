@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"teddy1565.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="簡介 Intro什麼是JWT? 今天想記錄一下不同於以往的cookie以及session，在後端驗證身分的新方式 “Token”。 在分散式系統中，驗證身分是一件複雜的事情。特別是如果要設計一套具備高可靠、高效能、高彈性的分散式系統架構 驗證身分相較於在單機伺服器上會變成一個更加複雜的事情">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JSON web Token 及分散式系統應用簡介">
+<meta property="og:url" content="https://teddy1565.github.io/2021/08/28/JSON-web-Token/index.html">
+<meta property="og:site_name" content="JING-TING XIONG Blog">
+<meta property="og:description" content="簡介 Intro什麼是JWT? 今天想記錄一下不同於以往的cookie以及session，在後端驗證身分的新方式 “Token”。 在分散式系統中，驗證身分是一件複雜的事情。特別是如果要設計一套具備高可靠、高效能、高彈性的分散式系統架構 驗證身分相較於在單機伺服器上會變成一個更加複雜的事情">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2021-08-27T16:11:46.000Z">
+<meta property="article:modified_time" content="2025-06-16T11:23:00.394Z">
+<meta property="article:author" content="teddy1565">
+<meta property="article:tag" content="Token">
+<meta property="article:tag" content="jwt">
+<meta property="article:tag" content="JWT">
+<meta property="article:tag" content="rear-end">
+<meta property="article:tag" content="後端">
+<meta property="article:tag" content="Node.js">
+<meta property="article:tag" content="HTTP">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://teddy1565.github.io/2021/08/28/JSON-web-Token/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-TW'
+  };
+</script>
+
+  <title>JSON web Token 及分散式系統應用簡介 | JING-TING XIONG Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">JING-TING XIONG Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>關於</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://teddy1565.github.io/2021/08/28/JSON-web-Token/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="teddy1565">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="JING-TING XIONG Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          JSON web Token 及分散式系統應用簡介
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">發表於</span>
+
+              <time title="創建時間：2021-08-28 00:11:46" itemprop="dateCreated datePublished" datetime="2021-08-28T00:11:46+08:00">2021-08-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新於</span>
+                <time title="修改時間：2025-06-16 19:23:00" itemprop="dateModified" datetime="2025-06-16T19:23:00+08:00">2025-06-16</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="簡介-Intro"><a href="#簡介-Intro" class="headerlink" title="簡介 Intro"></a>簡介 Intro</h2><p>什麼是JWT? 今天想記錄一下不同於以往的cookie以及session，在後端驗證身分的新方式 “Token”。</p>
+<p>在分散式系統中，驗證身分是一件複雜的事情。特別是如果要設計一套具備高可靠、高效能、高彈性的分散式系統架構</p>
+<p>驗證身分相較於在單機伺服器上會變成一個更加複雜的事情</p>
+<span id="more"></span>
+
+<hr>
+<h2 id="JSON-Web-Token-JWT"><a href="#JSON-Web-Token-JWT" class="headerlink" title="JSON Web Token(JWT)"></a>JSON Web Token(JWT)</h2><p>JWT全名為JSON Web Token，是一種基於JSON的開放標準<a target="_blank" rel="noopener" href="https://datatracker.ietf.org/doc/html/rfc7519">RFC 7519</a>，他定義了一種簡潔(compact)且自包含(self-contained)的方式。</p>
+<p>用於在雙方之間安全地將訊息作為JSON物件傳輸。而且這個訊息是經過數位簽章(Digital Signature)。</p>
+<p>因此可以被驗證及信任，可以使用<strong>密碼</strong>或是用一對<strong>公鑰/私鑰</strong>來對JWT進行簽章</p>
+<p>註:</p>
+<ul>
+<li>簡潔(compact)：體積非常的小，可放在 URL 、 POST body 或 HTTP Header 內發送請求，體積小意味著傳輸速度快。</li>
+<li>自包含(self-contained)：payload 裡面就有所需要的資訊，不需要再重新 query database 的資料。</li>
+<li><a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E6%95%B8%E4%BD%8D%E7%B0%BD%E7%AB%A0">數位簽章</a></li>
+</ul>
+<hr>
+<h2 id="哪種情況適合使用JWT"><a href="#哪種情況適合使用JWT" class="headerlink" title="哪種情況適合使用JWT"></a>哪種情況適合使用JWT</h2><ul>
+<li><p><strong>授權(Authorization)</strong>:這是很常見 JWT 的使用方式，例如使用者從 Client 端登入後，該使用者再次對 Server 端發送請求的時候，會夾帶著 JWT，允許使用者存取該 token 有權限的資源。單一登錄(Single Sign On)是當今廣泛使用 JWT 的功能之一，因為它的成本較小並且可以在不同的網域(domain)中輕鬆使用。 </p>
+</li>
+<li><p>**訊息交換(Information Exchange)**：JWT 可以透過公鑰/私鑰來做簽章，讓我們可以知道是誰發送這個 JWT，此外，由於簽章是使用 header 和 payload 計算的，因此還可以驗證內容是否遭到篡改。</p>
+</li>
+</ul>
+<hr>
+<h2 id="JWT的組成結構"><a href="#JWT的組成結構" class="headerlink" title="JWT的組成結構"></a>JWT的組成結構</h2><p>每個JWT都包含三部分訊息，以.作為區隔分開，第一部分為Header，第二部分為Payload，前面兩個部分為特定結構的JSON。</p>
+<p>而<strong>第三部分取決於演算法用於簽章或是加密</strong>，如果是未加密的JWT，則將其省略。</p>
+<p>JWT可以被編碼為<strong>JWS(JSON Web Signatures)<strong>或</strong>JWE(JSON Web Encryption)</strong> 簡潔的表現形式(Compact Serialization)。</p>
+<p>在JWS和JWE規範中定義了另一種序列化格式，稱為JSON序列化，這是一種非簡潔的表示形式。</p>
+<p>允許在同一個JWT中使用多個簽章或接收者</p>
+<p>簡潔的序列化(The compact serialization)是對前兩個UTF-8字節的JSON元素(Header和Payload)</p>
+<p>以及簽章或加密的data(不是JSON物件本身)做Base64 URL編碼。</p>
+<ul>
+<li><p>Header</p>
+<p>每個JWT都有一個Header(又稱JOSE Header)，是一種<strong>對自我的聲明</strong>。</p>
+<p>無論JWT是簽章或加密，這些聲明都表示了其所使用的演算法，通常也會表示要如何解析JWT的其餘部分。</p>
+<p><strong>根據JWT類型，Header中可能必須包含更多字段</strong>。加密的JWT攜帶有關用於密鑰加密和內容加密的加密演算法的訊息。<strong>未加密的JWT，這些字段則不存在</strong></p>
+<p>Header包含</p>
+<ul>
+<li><p>必要欄位</p>
+<ul>
+<li>algorithm: 對此JWT進行簽章、加密或解密的主要演算法。<strong>對於未加密的JWT，此欄位必須設置為none</strong></li>
+</ul>
+</li>
+<li><p>非必要欄位</p>
+<ul>
+<li><p>typ: JWT本身的媒體類型。此參數有助於將JWT與帶有JOSE header的其他Object混合使用的情況。</p>
+<p>  但實際上這種事情很少發生。如果這種情況存在，則此參數應設置為”JWT”</p>
+</li>
+<li><p>cty: 內容類型。(Content Type)</p>
+<p>  大多數JWT攜帶的特定聲明以及任意數據，作為其Payload的一部分，在這種情況下，不得設置內容參數。</p>
+<p>  對於Payload本身是JWT自己(巢狀JWT)的Instance，此參數必須存在，並設定其值為”JWT”。</p>
+<p>  用來表示需要進一步處理巢狀的JWT。而巢狀的JWT很少見，因此cty很少出現在header中</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>Payload</p>
+<p>通常與使用者有關的資訊都會被放在Payload之中，Payload是一個JSON物件。</p>
+<p>JWT規範指出，應該忽略在實踐中無法理解的聲明，具有所附特定含意的權利要求稱為Registered claims</p>
+<p>Registered Claims 包含</p>
+<ul>
+<li>iss: issuer的簡稱，用字串(case-sensitive)或URI表示這個JWT的唯一識別的發行方</li>
+<li>sub: subject的簡稱，用字串(case-sensitive)或URI表示這個JWT所夾帶的唯一辨別方式</li>
+</ul>
+<p>此JWT中包含的聲明，是關於Object的聲明，JWT規範規定，此聲明在發行方的上下文中必須是唯一的，或者在不可能的情況下必須是全局唯一。</p>
+<ul>
+<li><p>aud: audience的簡稱，用字串(case-sensitive)或URI或陣列表示這個JWT唯一識別的預期接收者。</p>
+<p>也就是說，當此參數存在時，則讀取此JWT數據的一方必須在aud中找到自己，或者無視JWT中包含的數據。</p>
+</li>
+<li><p>exp: expiration(time)的簡稱，一個用來表示特定日期或時間的數字，格式為<strong>POSIX</strong>定義的<strong>自紀元以來的秒數</strong>，也就是<strong>UNIX時間</strong>。</p>
+<p>此聲明設置了該JWT被視為無效的確切時間，實務上可能允許時間存在一些偏差(考慮此JWT到期日後的幾分鐘內有效)</p>
+</li>
+<li><p>nbf: not before (time) 的簡稱，exp 的相反，格式同 exp，當前時間和日期必須等於或晚於該日期和時間。一些實踐可能允許一定的偏差。</p>
+</li>
+<li><p>iat: issued at (time) 的簡稱，一個用來表示特定日期和時間的數字(格式同 exp 和 nbf)，即該 JWT 發行的時間。</p>
+</li>
+<li><p>jti: JWT ID 的簡稱，一個字串表示這個唯一識別的 JWT。此聲明可用於區分具有其他相似內容的 JWT (例如，防止重放)。取決於實現以確保唯一性。</p>
+</li>
+</ul>
+<p>所有的聲明，只要不在 registered claims 裡的，不是 private claims 就是 public claims。</p>
+<p>Private Claims：</p>
+<p>是由 JWT 的使用者(消費者和生產者)定義的那些。換句話說，這些是用於特定情況的臨時聲明。因此，必須注意防止衝突(collisions)。</p>
+<p>Public Claims：</p>
+<p>在 <a target="_blank" rel="noopener" href="https://www.iana.org/assignments/jwt/jwt.xhtml">IANA JSON Web Token</a> 聲明註冊表上註冊的聲明(用戶可以註冊其聲明，以防止衝突)，或者是使用抗衝突名稱命名的聲明(例如，在名稱前添加 namespace)。</p>
+</li>
+<li><p>Signature/Encryption Data:</p>
+<p>用於存放簽署或加密後的資料</p>
+</li>
+</ul>
+<h3 id="小節"><a href="#小節" class="headerlink" title="小節"></a>小節</h3><p>在看過JWT的簡易介紹後相信對於JWT的特性有一定的了解，如果想看更加詳細的資料歡迎參閱<a target="_blank" rel="noopener" href="https://5xruby.tw/posts/what-is-jwt">這裡</a></p>
+<hr>
+<h2 id="實際應用"><a href="#實際應用" class="headerlink" title="實際應用"></a>實際應用</h2><h3 id="介紹"><a href="#介紹" class="headerlink" title="介紹"></a>介紹</h3><p>這個情況用於一個處理IoT的分散式系統，在接收來自IoT設備的數據，處理過後在網站上呈現視覺資料。<br>並且可以透過網站，對IoT設備進行遠程操作。</p>
+<p>設計網站的第一步，肯定是需要處理使用者的登入、註冊以及身分驗證等業務邏輯。</p>
+<h2 id="分散式系統以及微服務特性"><a href="#分散式系統以及微服務特性" class="headerlink" title="分散式系統以及微服務特性"></a>分散式系統以及微服務特性</h2><p>在分散式系統架構中，session在微服務架構中是一個不太可靠且開發成本大的身分驗證方式，由於session需要在伺服器儲存相關資料，所以流程通常如下</p>
+<h3 id="基於express搭配session-cookie的流程"><a href="#基於express搭配session-cookie的流程" class="headerlink" title="基於express搭配session/cookie的流程"></a>基於express搭配session/cookie的流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">使用者請求資料--&gt;request經過load balancer--&gt;到達某一個複本上--&gt;</span><br><span class="line"></span><br><span class="line">--&gt;複本伺服器接收到使用者的請求--&gt;解析使用者的request--&gt;搜尋DB或cache找到相關的驗證資訊--&gt;比對驗證資料</span><br><span class="line"></span><br><span class="line">如果驗證成功:</span><br><span class="line">根據使用者的request進行下一步操作</span><br><span class="line"></span><br><span class="line">如果驗證失敗:</span><br><span class="line">回傳失敗相關訊息</span><br></pre></td></tr></table></figure>
+
+<p>小節</p>
+<p>透過以上的介紹可以了解，在分散式系統中，基本上難以確保使用者能夠每次都連線到同一個複本服務伺服器。</p>
+<p>因此使用者的相關資訊(session)難以留存在複本上，只能存入如Redis…這類作為快取的DB或是透過API傳遞資料給某個紀錄使用者相關資訊的服務主機</p>
+<p>這樣在整體的效能上會偏慢，為了驗證身分需要經過好幾道手續。</p>
+<p>而cookie更是難以確保資料正確及安全性。</p>
+<p>於是乎，最後採取的Token做為網站驗證身分的方式。</p>
+<h3 id="基於express搭配JWT的流程"><a href="#基於express搭配JWT的流程" class="headerlink" title="基於express搭配JWT的流程"></a>基於express搭配JWT的流程</h3><p>基本上在提供同一個服務內的所有複本伺服器都會使用同一組金鑰，因為採用容器化的方式架構的話。會使用同一個image</p>
+<p>所以如果用token在request進來的時候可以直接做運算，只要私鑰沒有外流，基本上都是較為安全的。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">request--&gt;load balance--&gt;pod--&gt;某個複本--&gt;伺服器接收到request之後直接根據擁有的私鑰解密驗證request的合法性</span><br><span class="line"></span><br><span class="line">如果合法：進行下一步操作</span><br><span class="line">如果不合法(過期/遭到修改無法解密):回傳request不合法的資訊</span><br></pre></td></tr></table></figure>
+
+<h3 id="實務系統架構詳細說明"><a href="#實務系統架構詳細說明" class="headerlink" title="實務系統架構詳細說明"></a>實務系統架構詳細說明</h3><p>相比session的流程，減少了對快取或DB的讀寫。同時也不需要綁定網域，這樣一來就可以自己服務之間不同的網域中傳遞資料。</p>
+<p>對伺服器的相依減少後，可以從原本的MVC在同一個伺服器中運行，拆解成各個不同的微服務。</p>
+<p>使用session/cookie由於對發行的伺服器有依賴，所以不同的middleware間相依性很高。</p>
+<h4 id="以nodejs的express為例子。如果採用session或cookie的架構如下"><a href="#以nodejs的express為例子。如果採用session或cookie的架構如下" class="headerlink" title="以nodejs的express為例子。如果採用session或cookie的架構如下"></a>以nodejs的express為例子。如果採用session或cookie的架構如下</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">|----------|</span><br><span class="line">|    P     |</span><br><span class="line">|    O     |</span><br><span class="line">|    D     |=========&gt;假設這裡面包含了30個nodejs伺服器，都使用同樣的程式碼</span><br><span class="line">|          |</span><br><span class="line">|    A     |</span><br><span class="line">|----------|</span><br><span class="line">-------------------------------------------------------------------------</span><br><span class="line">那其中一個Node.js伺服器架構長相大致上</span><br><span class="line"></span><br><span class="line">|</span><br><span class="line">|</span><br><span class="line">|----bin(server)</span><br><span class="line">|</span><br><span class="line">|----route(middleware)</span><br><span class="line">|           |</span><br><span class="line">|           |------index.js</span><br><span class="line">|           |</span><br><span class="line">|           |------author.js(查詢DB驗證資料)</span><br><span class="line">|           |</span><br><span class="line">|           |------dosomeing.js</span><br><span class="line">|           |</span><br><span class="line">|           |------parse.js</span><br><span class="line">|</span><br><span class="line">|----view(viewer)</span><br><span class="line">|</span><br><span class="line">|----app.js(control)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>由於session/cookie對發行的環境依賴</p>
+<p>當有request進入伺服器後，伺服器必須先進行一次撈取資料的動作，驗證完畢後驗證資料只留存在這個伺服器中。</p>
+<p>因此其他29個伺服器，並不知道這個request是合法的。</p>
+<p>為了避免反覆的驗證以及資料傳遞上的複雜，驗證完畢後的request隨後需要在這個伺服器上解析請求，並且完成他</p>
+<blockquote>
+<p>author.js–&gt;index.js—&gt;parse.js—&gt;dosomeing.js</p>
+</blockquote>
+<p>實際上流程應該是</p>
+<blockquote>
+<p>author.js–&gt;queryDB–&gt;author.js—&gt;index.js—&gt;parse.js—&gt;dosomeing.js</p>
+</blockquote>
+<p>這樣會導致同一個伺服器中負擔的責任太多，有可能產生賭塞。<br>最大的問題是，效率運用不佳以及權責沒有單一化(可以簡單理解為 良好設計上函式或物件只做單一的事情，那微服務的概念也差不多)</p>
+<p>這個問題當然也有辦法解決，但是相對於token來說需要花費更多的時間以及心力。<strong>那何不直接使用token呢?</strong></p>
+<h4 id="以nodejs的express為例子。如果採用token的架構如下"><a href="#以nodejs的express為例子。如果採用token的架構如下" class="headerlink" title="以nodejs的express為例子。如果採用token的架構如下"></a>以nodejs的express為例子。如果採用token的架構如下</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">|----------|</span><br><span class="line">|    P     |</span><br><span class="line">|    O     |</span><br><span class="line">|    D     |=========&gt;假設這裡面每個POD包含了30個nodejs伺服器，都使用同樣的程式碼</span><br><span class="line">|          |</span><br><span class="line">|   A/B    |</span><br><span class="line">|----------|</span><br><span class="line">-------------------------------------------------------------------------</span><br><span class="line">那POD A其中一個Node.js伺服器架構長相大致上</span><br><span class="line"></span><br><span class="line">|</span><br><span class="line">|</span><br><span class="line">|----bin(server)</span><br><span class="line">|</span><br><span class="line">|----route(middleware)</span><br><span class="line">|           |</span><br><span class="line">|           |------index.js</span><br><span class="line">|           |</span><br><span class="line">|           |------author.js(驗證資料)</span><br><span class="line">|           |</span><br><span class="line">|           |------pass.js(傳遞資料給下一個微服務)</span><br><span class="line">|           |</span><br><span class="line">|           |------reject.js(拒絕request)</span><br><span class="line">|</span><br><span class="line">|----view(viewer)</span><br><span class="line">|</span><br><span class="line">|----app.js(control)</span><br><span class="line"></span><br><span class="line">-------------------------------------------------------------------------</span><br><span class="line">那POD B其中一個Node.js伺服器架構大致上</span><br><span class="line"></span><br><span class="line">|</span><br><span class="line">|</span><br><span class="line">|----bin(server)</span><br><span class="line">|</span><br><span class="line">|----route(middleware)</span><br><span class="line">|           |</span><br><span class="line">|           |------index.js</span><br><span class="line">|           |</span><br><span class="line">|           |------dosomething.js</span><br><span class="line">|           |</span><br><span class="line">|           |------pass.js</span><br><span class="line">|           |</span><br><span class="line">|           |------reject.js</span><br><span class="line">|</span><br><span class="line">|----view(viewer)</span><br><span class="line">|</span><br><span class="line">|----app.js(control)</span><br><span class="line"></span><br><span class="line">-------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+
+<p>這兩個合作起來的流程大概為:</p>
+<blockquote>
+<p>request–&gt;POD A–&gt;author.js–&gt;index.js–&gt;pass.js | reject.js</p>
+</blockquote>
+<p>POD A處理完之後使用pass.js將資料傳遞給POD B</p>
+<blockquote>
+<p>request–&gt;POD B–&gt;dosomething.js–&gt;index.js—&gt;pass.js | reject.js</p>
+</blockquote>
+<p>透過以上流程，可以看到。request在傳入單個複本時，不必再消耗效能對DB操作。</p>
+<p>同時由於對簽署的伺服器沒有依賴性，可以很輕易的的請求傳遞給其他服務進行操作。</p>
+<p>解決了session/cookie在分散式系統中難以應用的問題。</p>
+<hr>
+<h3 id="結論"><a href="#結論" class="headerlink" title="結論"></a>結論</h3><p>由於session/cookie對發行的環境依賴</p>
+<p>當有request進入伺服器後，伺服器必須先進行一次撈取資料的動作，驗證完畢後驗證資料只留存在這個伺服器中。</p>
+<p>因此其他29個伺服器，並不知道這個request是合法的。</p>
+<p>為了避免反覆的驗證以及資料傳遞上的複雜，驗證完畢後的request隨後需要在這個伺服器上解析請求，並且完成這個請求動作。</p>
+<p>這個問題雖然能夠透過快取等或其他設計方式解決，但相比Token設計需要花費更大的心力處理。</p>
+<p>使用Token既不需要考慮跨網域跨單元的問題，在資料傳遞上更加單純。安全性方面來說，相較session/cookie的模式也絲毫不遜色</p>
+<p>因此如果看到這篇文章的讀者，正在設計分散式系統驗證身分的部份的話，可以多加思考驗證身分需要花費的運算資源。</p>
+<p>如果是需要做單一登入的功能，那更恭喜你。你找到了一個很好的解決方案，Token絕對是可以納入考量之一的實踐方式</p>
+<p>微服務的設計可以使每個POD的職責更加單純，在資源的運用上更加有效率。使用Token傳遞資料，除了驗證身分單純外，也減少了資源的浪費</p>
+<hr>
+<h2 id="註解"><a href="#註解" class="headerlink" title="註解"></a>註解</h2><ul>
+<li><p>英文或真正的學術名詞，還請不吝糾正</p>
+</li>
+<li><p>POD其實是筆者借鑑k8s的名詞，但概念上基本相同。筆者目前第一版IoT系統架構實作方式，在GCP上實作</p>
+<p>由附載平衡器將大量請求平均到不同的Instance上，每個Instance包含了Nginx/Docker/Custom Manager</p>
+<p>先將請求透過NGX分類平衡到不同的容器中，再透過Manager傳遞容器間的資料，或是分配任務</p>
+<p>這個概念由於不太會稱呼，在後來學習K8S了解到與筆者理念相同的設計，因此筆者只針對自己的文章暫時稱這樣的模式為POD</p>
+</li>
+<li><p>如果有任何指教歡迎與我聯繫，我會立刻改善。或是有任何問題想提出，我有空的時候會回答</p>
+</li>
+<li><p>聯絡方式github teddy1565</p>
+</li>
+</ul>
+<h2 id="參考資料"><a href="#參考資料" class="headerlink" title="參考資料"></a>參考資料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://5xruby.tw/posts/what-is-jwt">是誰在敲打我窗?什麼是 JWT ?</a></li>
+<li><a target="_blank" rel="noopener" href="https://ithelp.ithome.com.tw/articles/10215645">Day 1 - 分散式系統筆記</a></li>
+<li><a target="_blank" rel="noopener" href="https://youtube.com/playlist?list=PL9jciz8qz_zyO55qECi2PD3k6lgxluYEV">NTHUOCW 周志遠教授-作業系統 Operating System</a></li>
+<li><a target="_blank" rel="noopener" href="https://medium.com/%E9%BA%A5%E5%85%8B%E7%9A%84%E5%8D%8A%E8%B7%AF%E5%87%BA%E5%AE%B6%E7%AD%86%E8%A8%98/%E7%AD%86%E8%A8%98-%E9%80%8F%E9%81%8E-jwt-%E5%AF%A6%E4%BD%9C%E9%A9%97%E8%AD%89%E6%A9%9F%E5%88%B6-2e64d72594f8">[筆記] 透過 JWT 實作驗證機制</a></li>
+<li><a target="_blank" rel="noopener" href="https://console.cloud.google.com/">Google Cloud Platform</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Token/" rel="tag"># Token</a>
+              <a href="/tags/jwt/" rel="tag"># jwt</a>
+              <a href="/tags/JWT/" rel="tag"># JWT</a>
+              <a href="/tags/rear-end/" rel="tag"># rear-end</a>
+              <a href="/tags/%E5%BE%8C%E7%AB%AF/" rel="tag"># 後端</a>
+              <a href="/tags/Node-js/" rel="tag"># Node.js</a>
+              <a href="/tags/HTTP/" rel="tag"># HTTP</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/08/27/First-Post/" rel="prev" title="First Post">
+      <i class="fa fa-chevron-left"></i> First Post
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/08/28/Redis0001/" rel="next" title="Redis叢集以及大使模式應用">
+      Redis叢集以及大使模式應用 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B0%A1%E4%BB%8B-Intro"><span class="nav-number">1.</span> <span class="nav-text">簡介 Intro</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JSON-Web-Token-JWT"><span class="nav-number">2.</span> <span class="nav-text">JSON Web Token(JWT)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%93%AA%E7%A8%AE%E6%83%85%E6%B3%81%E9%81%A9%E5%90%88%E4%BD%BF%E7%94%A8JWT"><span class="nav-number">3.</span> <span class="nav-text">哪種情況適合使用JWT</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JWT%E7%9A%84%E7%B5%84%E6%88%90%E7%B5%90%E6%A7%8B"><span class="nav-number">4.</span> <span class="nav-text">JWT的組成結構</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%8F%E7%AF%80"><span class="nav-number">4.1.</span> <span class="nav-text">小節</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%A6%E9%9A%9B%E6%87%89%E7%94%A8"><span class="nav-number">5.</span> <span class="nav-text">實際應用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8B%E7%B4%B9"><span class="nav-number">5.1.</span> <span class="nav-text">介紹</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%95%A3%E5%BC%8F%E7%B3%BB%E7%B5%B1%E4%BB%A5%E5%8F%8A%E5%BE%AE%E6%9C%8D%E5%8B%99%E7%89%B9%E6%80%A7"><span class="nav-number">6.</span> <span class="nav-text">分散式系統以及微服務特性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%96%BCexpress%E6%90%AD%E9%85%8Dsession-cookie%E7%9A%84%E6%B5%81%E7%A8%8B"><span class="nav-number">6.1.</span> <span class="nav-text">基於express搭配session&#x2F;cookie的流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%96%BCexpress%E6%90%AD%E9%85%8DJWT%E7%9A%84%E6%B5%81%E7%A8%8B"><span class="nav-number">6.2.</span> <span class="nav-text">基於express搭配JWT的流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%A6%E5%8B%99%E7%B3%BB%E7%B5%B1%E6%9E%B6%E6%A7%8B%E8%A9%B3%E7%B4%B0%E8%AA%AA%E6%98%8E"><span class="nav-number">6.3.</span> <span class="nav-text">實務系統架構詳細說明</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%A5nodejs%E7%9A%84express%E7%82%BA%E4%BE%8B%E5%AD%90%E3%80%82%E5%A6%82%E6%9E%9C%E6%8E%A1%E7%94%A8session%E6%88%96cookie%E7%9A%84%E6%9E%B6%E6%A7%8B%E5%A6%82%E4%B8%8B"><span class="nav-number">6.3.1.</span> <span class="nav-text">以nodejs的express為例子。如果採用session或cookie的架構如下</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%A5nodejs%E7%9A%84express%E7%82%BA%E4%BE%8B%E5%AD%90%E3%80%82%E5%A6%82%E6%9E%9C%E6%8E%A1%E7%94%A8token%E7%9A%84%E6%9E%B6%E6%A7%8B%E5%A6%82%E4%B8%8B"><span class="nav-number">6.3.2.</span> <span class="nav-text">以nodejs的express為例子。如果採用token的架構如下</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B5%90%E8%AB%96"><span class="nav-number">6.4.</span> <span class="nav-text">結論</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A8%BB%E8%A7%A3"><span class="nav-number">7.</span> <span class="nav-text">註解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%83%E8%80%83%E8%B3%87%E6%96%99"><span class="nav-number">8.</span> <span class="nav-text">參考資料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">teddy1565</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">42</span>
+        <span class="site-state-item-name">標籤</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">teddy1565</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 強力驅動
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

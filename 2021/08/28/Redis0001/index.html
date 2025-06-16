@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"teddy1565.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="簡介 Intro相信在這個年代(2021)大多數的後端開發者對於分散式系統開發及加速都有不少心得 其中非常知名的快取應用，就包含了Memory Storage類型的NoSQL，比如Redis或Memcached 今天寫的文章主要介紹在GCP上開發分散式系統，Redis的簡單應用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis叢集以及大使模式應用">
+<meta property="og:url" content="https://teddy1565.github.io/2021/08/28/Redis0001/index.html">
+<meta property="og:site_name" content="JING-TING XIONG Blog">
+<meta property="og:description" content="簡介 Intro相信在這個年代(2021)大多數的後端開發者對於分散式系統開發及加速都有不少心得 其中非常知名的快取應用，就包含了Memory Storage類型的NoSQL，比如Redis或Memcached 今天寫的文章主要介紹在GCP上開發分散式系統，Redis的簡單應用">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2021-08-28T11:15:10.000Z">
+<meta property="article:modified_time" content="2025-06-16T11:23:00.403Z">
+<meta property="article:author" content="teddy1565">
+<meta property="article:tag" content="Node.js">
+<meta property="article:tag" content="Redis">
+<meta property="article:tag" content="Cluster">
+<meta property="article:tag" content="Ambassador">
+<meta property="article:tag" content="GCP">
+<meta property="article:tag" content="ioredis">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://teddy1565.github.io/2021/08/28/Redis0001/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-TW'
+  };
+</script>
+
+  <title>Redis叢集以及大使模式應用 | JING-TING XIONG Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">JING-TING XIONG Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>關於</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://teddy1565.github.io/2021/08/28/Redis0001/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="teddy1565">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="JING-TING XIONG Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Redis叢集以及大使模式應用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">發表於</span>
+
+              <time title="創建時間：2021-08-28 19:15:10" itemprop="dateCreated datePublished" datetime="2021-08-28T19:15:10+08:00">2021-08-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新於</span>
+                <time title="修改時間：2025-06-16 19:23:00" itemprop="dateModified" datetime="2025-06-16T19:23:00+08:00">2025-06-16</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="簡介-Intro"><a href="#簡介-Intro" class="headerlink" title="簡介 Intro"></a>簡介 Intro</h2><p>相信在這個年代(2021)大多數的後端開發者對於分散式系統開發及加速都有不少心得</p>
+<p>其中非常知名的快取應用，就包含了Memory Storage類型的NoSQL，比如<strong>Redis</strong>或<strong>Memcached</strong></p>
+<p>今天寫的文章主要介紹在GCP上開發分散式系統，Redis的簡單應用</p>
+<span id="more"></span>
+
+<h2 id="準備階段"><a href="#準備階段" class="headerlink" title="準備階段"></a>準備階段</h2><p>既然是要介紹應用，那肯定是有實作的階段，要完成這個實作需要準備的東西有:</p>
+<ul>
+<li><p><strong>GCP Computer Engine 兩台Instance</strong> 或 <strong>兩台電腦</strong> 或 你有其他手段，比如容器/VM，能產生兩個概念實體的環境</p>
+</li>
+<li><p>Ubuntu 20.04 或其他支援Redis 6.0以上版本的OS(可能Redis 5.0應該也能完成這個小測驗)</p>
+</li>
+<li><p>基礎Shell技能</p>
+</li>
+<li><p>基礎網路技能</p>
+</li>
+<li><p>Node.js v14.x.x以上</p>
+</li>
+<li><p>NPM 套件管理工具</p>
+</li>
+<li><p>ioredis(nodejs對redis讀寫的套件之一)</p>
+</li>
+</ul>
+<hr>
+<h2 id="介紹"><a href="#介紹" class="headerlink" title="介紹"></a>介紹</h2><p>在安裝完畢所有的東西後，首先要來說明原理，知行合一是非常重要的事情。</p>
+<p>文中會提到Redis的設定配置，設計理念以及好處…等相關內容</p>
+<hr>
+<h2 id="記憶體資料庫"><a href="#記憶體資料庫" class="headerlink" title="記憶體資料庫"></a>記憶體資料庫</h2><p>首先我打算介紹<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/Redis">Redis</a>，它是一個記憶體資料庫，相似的產品有<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/Memcached">memcached</a>。</p>
+<p>這兩者都屬於NoSQL也都是記憶體資料庫，這兩者取決差異在於</p>
+<p>Redis更適合</p>
+<ul>
+<li>複雜的資料型態，像是 string、hash、list 和 set</li>
+<li>排序 in-memory 內的資料</li>
+<li>持久性的 key 儲存</li>
+<li>將你的資料做多個點的讀寫分離</li>
+<li>自動化錯誤修復</li>
+<li>使用/訂閱模式</li>
+<li>備份和恢復資料</li>
+</ul>
+<p>Memcached更適合</p>
+<ul>
+<li>簡單的模型</li>
+<li>使用多執行續來執行多節點程序</li>
+<li>擴展/收縮功能</li>
+<li>根據需求增加/減少節點</li>
+<li>將資料分至不同區儲存</li>
+<li>快取物件 (圖片、音檔等等)</li>
+</ul>
+<p>兩者之間的選擇需要讀者自行選擇，雖然實作手段不同，但設計理念是相似的。</p>
+<p>以筆者目前處理的業務IoT系統平台來說，會面臨更複雜的資料型態。</p>
+<p>且由於採用MQTT的方式進行機台與系統的資料傳遞，MQTT傳遞方式是屬於pub/sub的模式(也就是使用/訂閱模式)</p>
+<p>因此在筆者經手的案子上，Redis更加適合。因此這次實作以Redis Cluster為主</p>
+<hr>
+<h2 id="Redis"><a href="#Redis" class="headerlink" title="Redis"></a>Redis</h2><p>基本上Google搜尋能力是必備的，關於Redis的介紹隨便查一下就有很多比這篇文章更詳細的介紹。</p>
+<p>主要幫讀者整理了Redis的幾個特性，避免讀者在未來的設計及開發上踩雷</p>
+<p>長話短說，基本上整理了這三點提供參考</p>
+<ul>
+<li><p>Redis在6.0版本以前是單執行續的，準確地說</p>
+<blockquote>
+<p>其網路I/O和key-value讀寫是由一個執行序完成的</p>
+</blockquote>
+<p>而其他部分，e.g. 持久化模組、叢集模組等都還是多執行序的</p>
+<p>詳細的說明<a target="_blank" rel="noopener" href="https://www.gushiciku.cn/pl/gE3Y/zh-tw">請點我</a></p>
+</li>
+<li><p>在試圖使用多執行序前，請先試著優化自己的查詢方式，改採用pipe。</p>
+<p>如果不跳脫直覺設計觀念，維持著one command In,one response Out，就算用上多執行序</p>
+<p>我可以肯定效能還是一樣糟糕，因為每一次下達命令對Redis server來說都是一個很大的資源消耗</p>
+<p>如果情況允許，請多沉澱心情，設計適合pipe查詢模式的系統</p>
+</li>
+<li><p>由於Redis資料結構的特性，Key的長度不建議太長，太長的key會導致redis下降</p>
+<ul>
+<li>長度為10 : 寫-&gt;平均消耗時間0.053ms，讀-&gt;0.040ms</li>
+<li>長度為20000：寫-&gt;平均消耗時間0.352ms，讀-&gt;0.084ms</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="Redis-Cluster"><a href="#Redis-Cluster" class="headerlink" title="Redis Cluster"></a>Redis Cluster</h2><p>先不要直接被叢集這個名詞嚇到了，其實官方很親民的提供了很強大的cluster設置工具及組件。</p>
+<p>基本上只要跟著官方的文件操作，很快也能搞出一個屬於自己的Redis Cluster</p>
+<p>而Redis Cluster的特性自行搜尋也有很多結果，這邊也不多提。</p>
+<p>但相對少見的資料大概是對於Redis Cluster的效能描述。</p>
+<p>雖然對這類資料庫做基準測試是一件很沒有意義的事情，因為基本上只是在考驗網路I/O速度</p>
+<blockquote>
+<p>不過Cluster的效能可以簡單理解為<strong>N*M(Master Node 數量)</strong></p>
+</blockquote>
+<p>e.g.</p>
+<p>使用Redis官方文件配置Cluster，應該會有3個主節點以及3個從結點。</p>
+<p>那這個Cluster的效能，可以直接將在部屬的機器上測得單個Redis server效能 乘上 3個主節點數量</p>
+<p>假設我在我的電腦測得Redis IOPS 分別為 SET 200000/s GET 400000/s</p>
+<p>那Cluster的效能直接*3就好，但實務上受限於網路及socket分配速度等因素，實際效能會有瓶頸</p>
+<blockquote>
+<p>取決於系統負荷如何，事實上不應該將所有的資料只交由一台機器負責</p>
+</blockquote>
+<hr>
+<h2 id="Redis安全策略"><a href="#Redis安全策略" class="headerlink" title="Redis安全策略"></a>Redis安全策略</h2><p>先假設讀者已經裝好的Redis，並且也很順利的利用cli連上Redis。</p>
+<p>在預設情況下可以試著，從另外一台電腦，透過網路連線到Redis Server。</p>
+<p>預設情況下應該會回報一些關於security的問題。(金魚腦)</p>
+<p>這是因為Redis server為了效能考量其實並沒有真正的考慮到Security。</p>
+<p>因此如果直接將Redis server對外開放IP，很可能會受到反序列化這類的攻擊。</p>
+<p>(mongoDB存在類似問題)</p>
+<p>所以我們需要一個大使對外開放，代替我們對Redis server進行操作。</p>
+<p>而大使模式本身真正的用途不僅僅如此，也不僅僅用於Redis server，這後面會再度提到。</p>
+<hr>
+<h2 id="Redis安裝及配置"><a href="#Redis安裝及配置" class="headerlink" title="Redis安裝及配置"></a>Redis安裝及配置</h2><p>雖然網路上已經有很多資源了，但這裡除了安裝，也會提到一些需要注意的小細節。</p>
+<h3 id="安裝Redis"><a href="#安裝Redis" class="headerlink" title="安裝Redis"></a>安裝Redis</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">wget https://download.redis.io/releases/redis-6.2.5.tar.gz -P /usr/local/src</span><br><span class="line"><span class="meta">#</span><span class="bash"> 版本可以自行更換</span></span><br><span class="line">cd /usr/local/src/ #移動到剛剛下載的資料夾</span><br><span class="line">tar -zxvf redis-6.2.5.tar.gz #解壓縮Redis安裝包</span><br><span class="line">cd redis-6.2.5 #移動到解壓縮後的資料夾</span><br><span class="line">install GCC #安裝GCC</span><br><span class="line">yum install -y gcc-c++ #利用yum安裝C++ 如果沒有安裝yum自己想辦法</span><br><span class="line">make MALLOC=libc install #正式安裝Redis server</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置Redis-Cluster"><a href="#配置Redis-Cluster" class="headerlink" title="配置Redis Cluster"></a>配置Redis Cluster</h3><p>安裝完畢之後，接下來要進行Cluster配置</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cd ~ #或是移動到你想配置從集的資料夾</span><br><span class="line">mkdir redis-cluster &amp;&amp; cd redis-cluster</span><br><span class="line">mkdir 7000 7001 7002 7003 7004 7005</span><br><span class="line"><span class="meta">#</span><span class="bash"> 這邊要從7000重覆到7005 可以透過寫shell script解放雙手</span></span><br><span class="line">vim ./7000/7000.redis.conf</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>要撰寫的內容為</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">port 7000</span><br><span class="line">bind 0.0.0.0</span><br><span class="line">dir ~/redis-cluster/7000/data</span><br><span class="line">cluster-config-file nodes-7000.conf</span><br><span class="line">cluster-enabled yes</span><br><span class="line">cluster-node-timeout 5000</span><br><span class="line">cluster-announce-ip 127.0.0.1</span><br><span class="line">appendonly yes</span><br><span class="line">daemonize yes</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>從7000~7005都配置完畢之後</p>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">redis-server 127.0.0.1:7000 #這個也要從7000~7005</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>基本上這樣應該已經先架設完畢cluster，測試連線可以輸入</p>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">redis-cli -c -p 7000 -h 127.0.0.1 #只有在本機可以輸入127.0.0.1，如果是另一台要連線需要輸入對外的IP</span><br></pre></td></tr></table></figure>
+
+<p>如果可以正常使用redis那基本就是安裝且配置成功了</p>
+<hr>
+<h2 id="Ambassador"><a href="#Ambassador" class="headerlink" title="Ambassador"></a>Ambassador</h2><p>大使模式在分散式系統中，其實主要是提供不同應用程式之間的溝通，大使的功能跟應用程式分離。</p>
+<p>可以使在撰寫應用程式時，減少與其他服務的耦合。</p>
+<p>因此大使不只能夠使用在Redis，也能應用在SQL或其他服務之上</p>
+<p>能夠使整體架構更加彈性且增加解耦合性，但要注意的是透過大使處理服務，會產生延遲…等常見問題</p>
+<p>而本篇文章要說的，正是由於Redis server極度不建議對外開放，所以透過大使操作在遠端機器的Redis server</p>
+<p>大使也能夠過濾惡意字串，避免Redis server直接遭受攻擊</p>
+<p>總結的說，大使大致上做的事情有；</p>
+<ul>
+<li>防止惡意請求直接破壞應用程式</li>
+<li>增加系統架構整體解耦合性</li>
+<li>監控性能指標以及機器環境…等</li>
+</ul>
+<hr>
+<h2 id="接下來要實作的內容的架構圖"><a href="#接下來要實作的內容的架構圖" class="headerlink" title="接下來要實作的內容的架構圖"></a>接下來要實作的內容的架構圖</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">   10.0.14.15           |---------------------------|       |-------------</span><br><span class="line">|-----------------|     |    |-----------------|    |       |</span><br><span class="line">|                 |     |    | |-------------| |    |       |</span><br><span class="line">|                 |     |    | |Redis  server| |    |       |</span><br><span class="line">|                 |     |    | |------|------| |    |       |</span><br><span class="line">|   Instance A    | ====|===&gt;|        |        |&lt;===|=X=X=X=|===&gt;</span><br><span class="line">|                 |     |    | |------|------| |    | Don&#x27;t |</span><br><span class="line">|                 |     |    | |  Ambassador | |    |Provide|</span><br><span class="line">|                 |     |    | |------|------| |    |Service|</span><br><span class="line">|-----------------|     |    |--------|--------|    |       |</span><br><span class="line">                        |             |             |       |</span><br><span class="line">|-----------------|     |    |--------|--------|    |       |   INTERNET</span><br><span class="line">|                 |     |    | |------|------| |    |       |</span><br><span class="line">|                 |     |    | |             | |    |       |</span><br><span class="line">|                 |     |    | |             | |    |       |</span><br><span class="line">|   Instance B    | ====|===&gt;| |WebSiteServer| |&lt;===|=======|===&gt;</span><br><span class="line">|                 |     |    | |             | |    |Service|</span><br><span class="line">|                 |     |    | |             | |    |       |</span><br><span class="line">|                 |     |    | |-------------| |    |       |</span><br><span class="line">|-----------------|     |    |-----------------|    |       |</span><br><span class="line">    10.0.14.16          | VPC NetWork [Same Region] |       |</span><br><span class="line">    35.x.x.x            |---------------------------|       |-------------</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="Ambassador撰寫"><a href="#Ambassador撰寫" class="headerlink" title="Ambassador撰寫"></a>Ambassador撰寫</h2><p>使用Node.js搭配Express撰寫</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> ioredis = <span class="built_in">require</span>(<span class="string">&quot;ioredis&quot;</span>);</span><br><span class="line"><span class="keyword">const</span> express = <span class="built_in">require</span>(<span class="string">&quot;express&quot;</span>);</span><br><span class="line"><span class="keyword">const</span> router = express.router();</span><br><span class="line"><span class="keyword">const</span> config = [</span><br><span class="line">    &#123;<span class="attr">port</span>:<span class="string">&quot;7000&quot;</span>,<span class="attr">host</span>:<span class="string">&quot;127.0.0.1&quot;</span>&#125;,&#123;<span class="attr">port</span>:<span class="string">&quot;7001&quot;</span>,<span class="attr">host</span>:<span class="string">&quot;127.0.0.1&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="attr">port</span>:<span class="string">&quot;7002&quot;</span>,<span class="attr">host</span>:<span class="string">&quot;127.0.0.1&quot;</span>&#125;,&#123;<span class="attr">port</span>:<span class="string">&quot;7003&quot;</span>,<span class="attr">host</span>:<span class="string">&quot;127.0.0.1&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="attr">port</span>:<span class="string">&quot;7004&quot;</span>,<span class="attr">host</span>:<span class="string">&quot;127.0.0.1&quot;</span>&#125;,&#123;<span class="attr">port</span>:<span class="string">&quot;7005&quot;</span>,<span class="attr">host</span>:<span class="string">&quot;127.0.0.1&quot;</span>&#125;</span><br><span class="line">    ]</span><br><span class="line"><span class="keyword">let</span> cluster = ioredis.Cluster(config);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">getKeyAndValue</span>(<span class="params">&#123;data&#125;</span>)</span>&#123;</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="attr">key</span>:data.key,</span><br><span class="line">        <span class="attr">value</span>:data.value</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">router.post(<span class="string">&#x27;/set&#x27;</span>,<span class="function">(<span class="params">req,res,next</span>)=&gt;</span>&#123;</span><br><span class="line">    <span class="keyword">let</span> payload = getKeyAndValue(&#123;<span class="attr">data</span>:req.body&#125;);<span class="comment">//取得key跟value</span></span><br><span class="line">    cluster.set(payload.key,payload.value);<span class="comment">//將key跟value寫入redis</span></span><br><span class="line">    res.status(<span class="number">200</span>).send();<span class="comment">//寫入後 發送response http code 200 給發出請求的服務</span></span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">router.post(<span class="string">&#x27;/get&#x27;</span>,<span class="function">(<span class="params">req,res,next</span>)=&gt;</span>&#123;</span><br><span class="line">    <span class="keyword">let</span> payload = getKeyAndValue(&#123;<span class="attr">data</span>:req.body&#125;);<span class="comment">//取得key跟value</span></span><br><span class="line">    cluster.get(payload.key,payload.value,<span class="function">(<span class="params">error,apiResponse</span>)=&gt;</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(error)&#123;</span><br><span class="line">            <span class="built_in">console</span>.log(error)<span class="comment">//如果無法取得值則在server寫log</span></span><br><span class="line">            res.staus(<span class="number">404</span>).send(<span class="string">`<span class="subst">$&#123;error&#125;</span>`</span>);<span class="comment">//回應http code 404給發出請求的服務</span></span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            <span class="built_in">console</span>.log(apiResponse);</span><br><span class="line">            res.status(<span class="number">200</span>).send(apiResponse);<span class="comment">//如果取得值，則將取得的資料回應給請求的服務</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">    res.status(<span class="number">504</span>).send();</span><br><span class="line">&#125;);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>順便附上Redis Cluster自動安裝架設的Shell Script</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line">BASE_DIR=/usr/<span class="built_in">local</span>/redis-cluster</span><br><span class="line">PORTS=`seq 7000 7005`</span><br><span class="line"></span><br><span class="line">START_UP=<span class="variable">$BASE_DIR</span>/startup.sh</span><br><span class="line"></span><br><span class="line">SERVICE=redis-cluster.service</span><br><span class="line"></span><br><span class="line"><span class="comment">#Remove redis cluster</span></span><br><span class="line"><span class="keyword">function</span> <span class="function"><span class="title">remove_cluster</span></span>()&#123;</span><br><span class="line">    <span class="comment"># kill redis servers</span></span><br><span class="line">    ps -ef | grep redis-server | grep cluster | awk <span class="string">&#x27;&#123;print $2&#125;&#x27;</span> | xargs <span class="built_in">kill</span> -9</span><br><span class="line">    <span class="comment">#disable systemd</span></span><br><span class="line">    systemctl <span class="built_in">disable</span> redis-cluster.serivce</span><br><span class="line">    <span class="comment"># rm cluster data</span></span><br><span class="line">    <span class="keyword">if</span> [ -d <span class="variable">$BASE_DIR</span> ];<span class="keyword">then</span></span><br><span class="line">        rm -rf <span class="variable">$BASE_DIR</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ <span class="string">&quot;<span class="variable">$1</span>&quot;</span> = <span class="string">&quot;--remove&quot;</span> ];<span class="keyword">then</span></span><br><span class="line">    remove_cluster</span><br><span class="line">    <span class="built_in">exit</span> 0</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"><span class="comment">#Check redis command</span></span><br><span class="line"><span class="keyword">if</span> [ ! -f <span class="string">&quot;/usr/local/bin/redis-server&quot;</span> ];<span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;Redis not ready,Please install redis firstly!&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;&quot;</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;===== Install redis as follows =====&quot;</span></span><br><span class="line">    wget https://download.redis.io/releases/redis-6.2.5.tar.gz -P /usr/<span class="built_in">local</span>/src</span><br><span class="line">    <span class="built_in">cd</span> /usr/<span class="built_in">local</span>/src/</span><br><span class="line">    tar -zxvf redis-6.2.5.tar.gz</span><br><span class="line">    <span class="built_in">cd</span> redis-6.2.5</span><br><span class="line">    install GCC <span class="keyword">if</span> not exists</span><br><span class="line">    yum install -y gcc-c++</span><br><span class="line">    make MALLOC=libc install</span><br><span class="line"></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;&quot;</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># User custom setting</span></span><br><span class="line"><span class="built_in">echo</span> -n <span class="string">&quot;Enter your host&#x27;s public address(default 127.0.0.1):&quot;</span></span><br><span class="line"><span class="built_in">read</span> cluster_address</span><br><span class="line"></span><br><span class="line"><span class="comment">#enter work directory</span></span><br><span class="line">mkdir -p <span class="variable">$BASE_DIR</span></span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$BASE_DIR</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#generate configuration files</span></span><br><span class="line"><span class="keyword">function</span> <span class="function"><span class="title">generate_instance_conf</span></span>()&#123;</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;configuring server <span class="variable">$1</span>&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">#clean conf file</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;&quot;</span> &gt; <span class="variable">$1</span>/redis.conf</span><br><span class="line">    </span><br><span class="line">    <span class="comment">#write conf</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;port <span class="variable">$1</span>&quot;</span> &gt;&gt; <span class="variable">$1</span>/redis.conf</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;bind 0.0.0.0&quot;</span> &gt;&gt; <span class="variable">$1</span>/redis.conf</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;dir <span class="variable">$BASE_DIR</span>/<span class="variable">$1</span>/data&quot;</span> &gt;&gt; <span class="variable">$1</span>/redis.conf</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;cluster-config-file nodes-<span class="variable">$1</span>.conf&quot;</span> &gt;&gt; <span class="variable">$1</span>/redis.conf</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;cluster-enabled yes&quot;</span> &gt;&gt; <span class="variable">$1</span>/redis.conf</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;cluster-node-timeout 5000&quot;</span> &gt;&gt; <span class="variable">$1</span>/redis.conf</span><br><span class="line">    <span class="keyword">if</span> [ -n <span class="string">&quot;<span class="variable">$cluster_address</span>&quot;</span> ];<span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;cluster-announce-ip <span class="variable">$cluster_address</span>&quot;</span> &gt;&gt; <span class="variable">$1</span>/redis.conf</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;cluster-announce-ip 127.0.0.1&quot;</span> &gt;&gt; <span class="variable">$1</span>/redis.conf</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;appendonly yes&quot;</span> &gt;&gt; <span class="variable">$1</span>/redis.conf</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;daemonize yes&quot;</span> &gt;&gt; <span class="variable">$1</span>/redis.conf</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># mkdir dirs and setup startup.sh</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;#!/bin/bash&quot;</span> &gt; <span class="variable">$START_UP</span></span><br><span class="line">servers=</span><br><span class="line"><span class="keyword">for</span> port <span class="keyword">in</span> <span class="variable">$PORTS</span>;<span class="keyword">do</span></span><br><span class="line">    mkdir -p <span class="variable">$BASE_DIR</span>/<span class="variable">$port</span>/data</span><br><span class="line">    <span class="comment">#generate conf files</span></span><br><span class="line">    generate_instance_conf <span class="variable">$port</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;/usr/local/bin/redis-server <span class="variable">$BASE_DIR</span>/<span class="variable">$port</span>/redis.conf&quot;</span> &gt;&gt; <span class="variable">$START_UP</span></span><br><span class="line">    <span class="comment">#servers</span></span><br><span class="line">    servers=<span class="string">&quot;<span class="variable">$servers</span> 127.0.0.1:<span class="variable">$port</span>&quot;</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="comment">#startup instances </span></span><br><span class="line">chmod +x <span class="variable">$START_UP</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;starting servers...&quot;</span></span><br><span class="line"><span class="variable">$START_UP</span></span><br><span class="line">sleep 5s</span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;servers ready!&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#create cluster</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;configuring cluster...&quot;</span></span><br><span class="line">/usr/<span class="built_in">local</span>/bin/redis-cli --cluster create <span class="variable">$servers</span> --cluster-replicas 1</span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;configured!&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#generate redis-cluster server file</span></span><br><span class="line">cat &lt;&lt; <span class="string">EOT &gt; $BASE_DIR/redis-cluster.service</span></span><br><span class="line"><span class="string">[Unit]</span></span><br><span class="line"><span class="string">Description=Redis 6.2.5 Cluster Service</span></span><br><span class="line"><span class="string">After=network.target</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">[Service]</span></span><br><span class="line"><span class="string">WantedBy=default.target</span></span><br><span class="line"><span class="string">EOT</span></span><br><span class="line"><span class="comment">#create service</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Creating redis cluster serivce...&quot;</span></span><br><span class="line">ln -s <span class="variable">$BASE_DIR</span>/<span class="variable">$SERVICE</span> /etc/systemd/system/<span class="variable">$SERVICE</span></span><br><span class="line">sudo systemctl daemon-reload &amp;&amp; sudo systemctl <span class="built_in">enable</span> <span class="variable">$SERVICE</span> &amp;&amp; sudo systemctl start <span class="variable">$SERVICe</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#Cluster OK</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;&quot;</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Completed!&quot;</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;&quot;</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Test cluster with: /usr/local/bin/redis-cluster -c -h 127.0.0.1 -p 7000&quot;</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;&quot;</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;127.0.0.1:7000&gt;cluster nodes&quot;</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="撰寫中"><a href="#撰寫中" class="headerlink" title="撰寫中"></a>撰寫中</h2><hr>
+<h2 id="參考資料"><a href="#參考資料" class="headerlink" title="參考資料"></a>參考資料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://www.ecloudture.com/aws-elasticache-redis-and-memcache/">Elasticache : 比較 Memcached 和 Redis 的差別</a></li>
+<li><a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/Memcached">維基百科:memcached</a></li>
+<li><a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/Redis">維基百科:Redis</a></li>
+<li><a target="_blank" rel="noopener" href="https://atbug.com/redis-performance-key-length/">Key长度对Redis性能影响</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Node-js/" rel="tag"># Node.js</a>
+              <a href="/tags/Redis/" rel="tag"># Redis</a>
+              <a href="/tags/Cluster/" rel="tag"># Cluster</a>
+              <a href="/tags/Ambassador/" rel="tag"># Ambassador</a>
+              <a href="/tags/GCP/" rel="tag"># GCP</a>
+              <a href="/tags/ioredis/" rel="tag"># ioredis</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/08/28/JSON-web-Token/" rel="prev" title="JSON web Token 及分散式系統應用簡介">
+      <i class="fa fa-chevron-left"></i> JSON web Token 及分散式系統應用簡介
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/12/21/jsdoc0001/" rel="next" title="JSDoc 踩坑日記">
+      JSDoc 踩坑日記 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B0%A1%E4%BB%8B-Intro"><span class="nav-number">1.</span> <span class="nav-text">簡介 Intro</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BA%96%E5%82%99%E9%9A%8E%E6%AE%B5"><span class="nav-number">2.</span> <span class="nav-text">準備階段</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8B%E7%B4%B9"><span class="nav-number">3.</span> <span class="nav-text">介紹</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A8%98%E6%86%B6%E9%AB%94%E8%B3%87%E6%96%99%E5%BA%AB"><span class="nav-number">4.</span> <span class="nav-text">記憶體資料庫</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis"><span class="nav-number">5.</span> <span class="nav-text">Redis</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis-Cluster"><span class="nav-number">6.</span> <span class="nav-text">Redis Cluster</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis%E5%AE%89%E5%85%A8%E7%AD%96%E7%95%A5"><span class="nav-number">7.</span> <span class="nav-text">Redis安全策略</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis%E5%AE%89%E8%A3%9D%E5%8F%8A%E9%85%8D%E7%BD%AE"><span class="nav-number">8.</span> <span class="nav-text">Redis安裝及配置</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%9DRedis"><span class="nav-number">8.1.</span> <span class="nav-text">安裝Redis</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AERedis-Cluster"><span class="nav-number">8.2.</span> <span class="nav-text">配置Redis Cluster</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ambassador"><span class="nav-number">9.</span> <span class="nav-text">Ambassador</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A5%E4%B8%8B%E4%BE%86%E8%A6%81%E5%AF%A6%E4%BD%9C%E7%9A%84%E5%85%A7%E5%AE%B9%E7%9A%84%E6%9E%B6%E6%A7%8B%E5%9C%96"><span class="nav-number">10.</span> <span class="nav-text">接下來要實作的內容的架構圖</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ambassador%E6%92%B0%E5%AF%AB"><span class="nav-number">11.</span> <span class="nav-text">Ambassador撰寫</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%92%B0%E5%AF%AB%E4%B8%AD"><span class="nav-number">12.</span> <span class="nav-text">撰寫中</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%83%E8%80%83%E8%B3%87%E6%96%99"><span class="nav-number">13.</span> <span class="nav-text">參考資料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">teddy1565</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">42</span>
+        <span class="site-state-item-name">標籤</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">teddy1565</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 強力驅動
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
