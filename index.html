@@ -160,6 +160,76 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://teddy1565.github.io/2025/06/19/nodejs-components/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="teddy1565">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="JING-TING XIONG Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2025/06/19/nodejs-components/" class="post-title-link" itemprop="url">Node.js 核心組件交互深度解析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">發表於</span>
+              
+
+              <time title="創建時間：2025-06-19 00:19:00 / 修改時間：01:43:53" itemprop="dateCreated datePublished" datetime="2025-06-19T00:19:00+08:00">2025-06-19</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="Realm、ProcessObject、ChildProcess、MessageChannel-與-WorkerThread"><a href="#Realm、ProcessObject、ChildProcess、MessageChannel-與-WorkerThread" class="headerlink" title="Realm、ProcessObject、ChildProcess、MessageChannel 與 WorkerThread"></a>Realm、ProcessObject、ChildProcess、MessageChannel 與 WorkerThread</h2><p>Node.js 作為一個基於 Chrome V8 JavaScript 引擎的執行環境，其強大的異步處理能力、並行機制以及系統交互功能，離不開一系列精心設計的核心組件。</p>
+<p>對於已經深入 Node.js 原始碼的開發者而言，理解這些組件——特別是 Realm::RunBootstrapping 的啟動角色、全域 ProcessObject 的橋接作用、ChildProcess 的隔離執行模型（及其與 Realm、Process 和 V8 快照的關聯）、MessageChannel 的通信機制以及 WorkerThread 的並行實現——之間精確的相互關係與運作方式至關重要。</p>
+<p>本文旨在深入剖析這些關鍵組件，闡明它們在 Node.js 執行環境中的具體職責、初始化流程、與 V8 核心概念（如 Isolate、Context、Realm 和 Snapshot）的內在聯繫，以及它們之間進行通信和交互的底層機制。</p>
+<p>鑑於使用者對原始碼層面的關注，本分析將著重於這些組件的內部實現原理，力求清晰地展現 JavaScript 可見行為（例如 process.env 或 child_process.fork()）與其 C++ 及 V8 底層實現之間的緊密聯繫。</p>
+<p>這些組件共同構成了 Node.js 高效能與高並行特性的基石，理解它們的協同工作模式，是掌握 Node.js 核心架構的關鍵。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/06/19/nodejs-components/#more" rel="contents">
+                閱讀全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-TW">
     <link itemprop="mainEntityOfPage" href="https://teddy1565.github.io/2025/06/18/electron-with-angular/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -794,7 +864,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-count">9</span>
           <span class="site-state-item-name">文章</span>
         </a>
       </div>
