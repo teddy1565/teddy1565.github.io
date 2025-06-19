@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"teddy1565.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Preface: Is the way we record time no longer keeping up with the times?As the Internet of Things (IoT), Digital Twins, and AI are sweeping across the world, we are generating massive amounts of time-s">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Beyond Time Series — My Conception of the Architecture of the Next-Generation Spacetime Database &quot;TimeSpace&quot;">
+<meta property="og:url" content="https://teddy1565.github.io/2025/06/19/timespace-db-with-quantum-computing/index.html">
+<meta property="og:site_name" content="JING-TING XIONG Blog">
+<meta property="og:description" content="Preface: Is the way we record time no longer keeping up with the times?As the Internet of Things (IoT), Digital Twins, and AI are sweeping across the world, we are generating massive amounts of time-s">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2025-06-19T12:23:00.000Z">
+<meta property="article:modified_time" content="2025-06-19T12:52:22.703Z">
+<meta property="article:author" content="teddy1565">
+<meta property="article:tag" content="time">
+<meta property="article:tag" content="time series">
+<meta property="article:tag" content="database">
+<meta property="article:tag" content="vector">
+<meta property="article:tag" content="vector database">
+<meta property="article:tag" content="quantum">
+<meta property="article:tag" content="quantum computing">
+<meta property="article:tag" content="spacetime">
+<meta property="article:tag" content="machine learning">
+<meta property="article:tag" content="math">
+<meta property="article:tag" content="physics">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://teddy1565.github.io/2025/06/19/timespace-db-with-quantum-computing/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-TW'
+  };
+</script>
+
+  <title>Beyond Time Series — My Conception of the Architecture of the Next-Generation Spacetime Database "TimeSpace" | JING-TING XIONG Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">JING-TING XIONG Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>關於</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://teddy1565.github.io/2025/06/19/timespace-db-with-quantum-computing/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="teddy1565">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="JING-TING XIONG Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Beyond Time Series — My Conception of the Architecture of the Next-Generation Spacetime Database "TimeSpace"
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">發表於</span>
+              
+
+              <time title="創建時間：2025-06-19 20:23:00 / 修改時間：20:52:22" itemprop="dateCreated datePublished" datetime="2025-06-19T20:23:00+08:00">2025-06-19</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Preface-Is-the-way-we-record-time-no-longer-keeping-up-with-the-times"><a href="#Preface-Is-the-way-we-record-time-no-longer-keeping-up-with-the-times" class="headerlink" title="Preface: Is the way we record time no longer keeping up with the times?"></a>Preface: Is the way we record time no longer keeping up with the times?</h2><p>As the Internet of Things (IoT), Digital Twins, and AI are sweeping across the world, we are generating massive amounts of time-series data every day. From sensor data in smart factories to environmental perception in autonomous driving, our recording of time has reached unprecedented accuracy.</p>
+<p>However, I often feel a sense of dissatisfaction.</p>
+<span id="more"></span>
+
+<p>No matter how efficient they are, their core design philosophy is mostly “rearview mirror” - they are good at recording and querying “the historical trajectory of a single individual in the past”.</p>
+<p>But the real world is far more complex than this. We need not only to look back at the history of an object, but also to understand the complex, horizontal network of connections formed by all objects at a certain moment in the universe. We need not only “diachronic” tracking, but also “synchronic” snapshots.</p>
+<p>When I realized this gap, a bold idea began to brew in my mind: Can we design a completely new database architecture, whose core is no longer simply “time series” but “spacetime” itself?</p>
+<p>This is my initial idea for “TimeSpace DB”.</p>
+<h2 id="Core-Philosophy-The-Spacetime-Duality"><a href="#Core-Philosophy-The-Spacetime-Duality" class="headerlink" title="Core Philosophy: The Spacetime Duality"></a>Core Philosophy: The Spacetime Duality</h2><p>I believe that a true spatiotemporal database must be able to handle queries from both perspectives simultaneously and elegantly.</p>
+<p>I define this as “spatiotemporal duality”</p>
+<ul>
+<li><strong>TimeLine</strong> - Vertical individual history (co-location diachrony)</li>
+<li><strong>TimeFrame</strong> - A horizontal slice of the universe (synchronicity)</li>
+</ul>
+<p>Existing databases often only focus on one of the two. The core design of TimeSpace is to unify these two query perspectives from opposition.</p>
+<h3 id="TimeLine-Vertical-individual-history-co-location-diachrony"><a href="#TimeLine-Vertical-individual-history-co-location-diachrony" class="headerlink" title="TimeLine - Vertical individual history (co-location diachrony)"></a><strong>TimeLine - Vertical individual history (co-location diachrony)</strong></h3><p>This represents the complete life cycle of a single entity (a sensor, a car, a user) from birth to death.</p>
+<p>It is a vertical causal chain that goes deep into the time dimension,<br>allowing us to efficiently analyze the evolution and changes of any individual.</p>
+<h3 id="TimeFrame-A-horizontal-slice-of-the-universe-synchronicity"><a href="#TimeFrame-A-horizontal-slice-of-the-universe-synchronicity" class="headerlink" title="TimeFrame - A horizontal slice of the universe (synchronicity)"></a><strong>TimeFrame - A horizontal slice of the universe (synchronicity)</strong></h3><p>This represents a “cross-section” of the entire system<br>(a factory, a city, or even the entire world)<br>at a precise point in time. It is a global snapshot of the state with complex relationships,</p>
+<p>allowing us to analyze the interactions and connections between all individuals at that moment.</p>
+<h2 id="The-inherent-“superpowers”-of-the-architecture"><a href="#The-inherent-“superpowers”-of-the-architecture" class="headerlink" title="The inherent “superpowers” of the architecture"></a>The inherent “superpowers” of the architecture</h2><p>When we construct data models from this new perspective, some exciting features will naturally emerge. They are not additional “added” functions, but the inherent properties of this architecture.</p>
+<h3 id="First-Functional-Compression"><a href="#First-Functional-Compression" class="headerlink" title="First: Functional Compression"></a>First: Functional Compression</h3><p>Traditional compression is about finding the “repetitiveness” of data.</p>
+<p>But the compression I envision is about finding the <strong>“regularity”</strong> of data.</p>
+<p>Instead of storing trillions of discrete data points, can we find a mathematical function that can describe this data through optimization methods such as machine learning?</p>
+<p>What we really need to store may be just the compact parameters of this function.</p>
+<p>This is not just compression, it is a <strong>transition</strong> from “recording data” to “understanding data”.</p>
+<h3 id="Second-Intrinsic-Resilience"><a href="#Second-Intrinsic-Resilience" class="headerlink" title="Second: Intrinsic Resilience"></a>Second: Intrinsic Resilience</h3><p>Traditional fault tolerance relies on “backup”.</p>
+<p>But what if the way data is stored itself contains the “relational description” of surrounding data?</p>
+<p>In the TimeSpace model, each data point is like a fragment of a holographic projection, which contains not only its own information, but also the relationship with neighboring time and space points.</p>
+<p>This means that when a point is damaged, the entire system has the potential to “recalculate” the lost point based on the network relationship around it.</p>
+<p>This is a “self-healing” ability.</p>
+<h3 id="Third-Advanced-Spatiotemporal-Queries"><a href="#Third-Advanced-Spatiotemporal-Queries" class="headerlink" title="Third: Advanced Spatiotemporal Queries"></a>Third: Advanced Spatiotemporal Queries</h3><p>When data is no longer discrete points, but continuous functions, our query capabilities will be liberated.</p>
+<p>We are no longer limited to querying “a certain time” or “a certain place”, we can perform <strong>“diagonal slicing</strong>“ - for example, tracking an ambulance moving at high speed in the city, along its path (a vector that travels through time and space at the same time), and analyzing its real-time interactive relationship with the surrounding traffic signs.</p>
+<h2 id="Future-Outlook-From-Now-to-Quantum"><a href="#Future-Outlook-From-Now-to-Quantum" class="headerlink" title="Future Outlook: From Now to Quantum"></a>Future Outlook: From Now to Quantum</h2><p>This concept is still in the theoretical and design stage.</p>
+<p>But I firmly believe that its potential is far more than that.</p>
+<p>This architecture that can deeply understand “correlation” is the ideal evolution direction of the vector database.</p>
+<p>It can not only store vectors, but also understand the “vector field” of vectors evolving over time.</p>
+<p>In the long run, when the “correlations” we need to deal with reach astronomical levels, the traversal search of traditional computers will encounter bottlenecks.</p>
+<p>TimeSpace, a highly structured graph network, will become the best stage for search algorithms such as Grover’s Algorithm in quantum computing to exert their exponential acceleration advantages.</p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>I wrote this article to record an idea that has been lingering in my mind for a long time, and also to stimulate discussion with people who are also curious about the future data architecture.</p>
+<p>Perhaps this road is long, but I think it is worth thinking about and exploring to build a more efficient and intelligent data foundation for the next generation of applications.</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/time/" rel="tag"># time</a>
+              <a href="/tags/time-series/" rel="tag"># time series</a>
+              <a href="/tags/database/" rel="tag"># database</a>
+              <a href="/tags/vector/" rel="tag"># vector</a>
+              <a href="/tags/vector-database/" rel="tag"># vector database</a>
+              <a href="/tags/quantum/" rel="tag"># quantum</a>
+              <a href="/tags/quantum-computing/" rel="tag"># quantum computing</a>
+              <a href="/tags/spacetime/" rel="tag"># spacetime</a>
+              <a href="/tags/machine-learning/" rel="tag"># machine learning</a>
+              <a href="/tags/math/" rel="tag"># math</a>
+              <a href="/tags/physics/" rel="tag"># physics</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/06/19/nodejs-components/" rel="prev" title="Node.js 核心組件交互深度解析">
+      <i class="fa fa-chevron-left"></i> Node.js 核心組件交互深度解析
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface-Is-the-way-we-record-time-no-longer-keeping-up-with-the-times"><span class="nav-number">1.</span> <span class="nav-text">Preface: Is the way we record time no longer keeping up with the times?</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Core-Philosophy-The-Spacetime-Duality"><span class="nav-number">2.</span> <span class="nav-text">Core Philosophy: The Spacetime Duality</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#TimeLine-Vertical-individual-history-co-location-diachrony"><span class="nav-number">2.1.</span> <span class="nav-text">TimeLine - Vertical individual history (co-location diachrony)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TimeFrame-A-horizontal-slice-of-the-universe-synchronicity"><span class="nav-number">2.2.</span> <span class="nav-text">TimeFrame - A horizontal slice of the universe (synchronicity)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#The-inherent-%E2%80%9Csuperpowers%E2%80%9D-of-the-architecture"><span class="nav-number">3.</span> <span class="nav-text">The inherent “superpowers” of the architecture</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#First-Functional-Compression"><span class="nav-number">3.1.</span> <span class="nav-text">First: Functional Compression</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Second-Intrinsic-Resilience"><span class="nav-number">3.2.</span> <span class="nav-text">Second: Intrinsic Resilience</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Third-Advanced-Spatiotemporal-Queries"><span class="nav-number">3.3.</span> <span class="nav-text">Third: Advanced Spatiotemporal Queries</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Future-Outlook-From-Now-to-Quantum"><span class="nav-number">4.</span> <span class="nav-text">Future Outlook: From Now to Quantum</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Conclusion"><span class="nav-number">5.</span> <span class="nav-text">Conclusion</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">teddy1565</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">10</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">標籤</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">teddy1565</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 強力驅動
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
