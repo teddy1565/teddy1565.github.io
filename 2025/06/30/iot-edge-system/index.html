@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"teddy1565.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Edge Computing System Under Wafer Manufacture NetworkIn the semiconductor manufacturing industry, the design and implementation of edge computing systems is critical Since most modern systems are base">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Edge Computing System Under Wafer Manufacture Network Design">
+<meta property="og:url" content="https://teddy1565.github.io/2025/06/30/iot-edge-system/index.html">
+<meta property="og:site_name" content="JING-TING XIONG Blog">
+<meta property="og:description" content="Edge Computing System Under Wafer Manufacture NetworkIn the semiconductor manufacturing industry, the design and implementation of edge computing systems is critical Since most modern systems are base">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://teddy1565.github.io/images/iot-edge-system/OS-structure2.png">
+<meta property="og:image" content="https://teddy1565.github.io/images/iot-edge-system/IOT-Edge-Computing-Arch.png">
+<meta property="article:published_time" content="2025-06-30T08:14:00.000Z">
+<meta property="article:modified_time" content="2025-06-30T13:37:08.411Z">
+<meta property="article:author" content="teddy1565">
+<meta property="article:tag" content="Electron">
+<meta property="article:tag" content="Angular">
+<meta property="article:tag" content="TypeScript">
+<meta property="article:tag" content="Desktop App">
+<meta property="article:tag" content="Electron-Forge">
+<meta property="article:tag" content="IoT">
+<meta property="article:tag" content="System Design">
+<meta property="article:tag" content="Edge Computing">
+<meta property="article:tag" content="Minix">
+<meta property="article:tag" content="Wafer Manufacture">
+<meta property="article:tag" content="Network Design">
+<meta property="article:tag" content="Operating System Design">
+<meta property="article:tag" content="P2P Network">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://teddy1565.github.io/images/iot-edge-system/OS-structure2.png">
+
+<link rel="canonical" href="https://teddy1565.github.io/2025/06/30/iot-edge-system/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-TW'
+  };
+</script>
+
+  <title>Edge Computing System Under Wafer Manufacture Network Design | JING-TING XIONG Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">JING-TING XIONG Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>關於</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://teddy1565.github.io/2025/06/30/iot-edge-system/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="teddy1565">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="JING-TING XIONG Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Edge Computing System Under Wafer Manufacture Network Design
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">發表於</span>
+              
+
+              <time title="創建時間：2025-06-30 16:14:00 / 修改時間：21:37:08" itemprop="dateCreated datePublished" datetime="2025-06-30T16:14:00+08:00">2025-06-30</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Edge-Computing-System-Under-Wafer-Manufacture-Network"><a href="#Edge-Computing-System-Under-Wafer-Manufacture-Network" class="headerlink" title="Edge Computing System Under Wafer Manufacture Network"></a>Edge Computing System Under Wafer Manufacture Network</h2><p>In the semiconductor manufacturing industry, the design and implementation of edge computing systems is critical</p>
+<p>Since most modern systems are based on public clouds, the challenges and designs faced in a semiconductor manufacturing network built in an environment will be different</p>
+<p>This article intends to discuss how we can design a ground-side edge computing system for environmental construction</p>
+<h2 id="邊緣計算系統在半導體製造網絡中的設計"><a href="#邊緣計算系統在半導體製造網絡中的設計" class="headerlink" title="邊緣計算系統在半導體製造網絡中的設計"></a>邊緣計算系統在半導體製造網絡中的設計</h2><p>在半導體製造業中，邊緣計算系統的設計和實施是至關重要的</p>
+<p>相較於現代大多數基於公有雲的系統，在一個環境受限的半導體製造網絡中，所受到的挑戰與設計將截然不同</p>
+<p>本文打算探討，我們可能如何能設計一套運用在環境受限的地端邊緣計算系統</p>
+<span id="more"></span>
+
+<h2 id="Outline"><a href="#Outline" class="headerlink" title="Outline"></a>Outline</h2><ul>
+<li>Design Considerations And Challenges<ul>
+<li>Resource Constraints</li>
+<li>Technology Stack</li>
+</ul>
+</li>
+<li>System Architecture Overview<ul>
+<li>Design Overview</li>
+<li>Architecture Components</li>
+</ul>
+</li>
+</ul>
+<h2 id="Architecture-diagram"><a href="#Architecture-diagram" class="headerlink" title="Architecture diagram"></a>Architecture diagram</h2><p><img src="/images/iot-edge-system/OS-structure2.png" alt="alt text"></p>
+<p><img src="/images/iot-edge-system/IOT-Edge-Computing-Arch.png" alt="alt text"></p>
+<h2 id="Design-Considerations-And-Challenges-設計考量與挑戰"><a href="#Design-Considerations-And-Challenges-設計考量與挑戰" class="headerlink" title="Design Considerations And Challenges (設計考量與挑戰)"></a>Design Considerations And Challenges (設計考量與挑戰)</h2><p>When we design an edge computing system, we must consider many factors<br>(當我們要進行邊緣計算系統的設計時，必須考慮到許多因素)</p>
+<p>These factors include but are not limited to<br>(這些因素包括但不限於)</p>
+<ul>
+<li>Hardware resource limitations (硬體資源的限制)</li>
+<li>Software technology stack selection (軟體技術棧的選擇)</li>
+<li>System architecture design (系統架構的設計)</li>
+<li>Overall technical capabilities of the team (團隊整體的技術能力)</li>
+<li>System scalability (系統的可擴展性)</li>
+<li>Ease of deployment and maintenance (部屬和維護的便利性)</li>
+</ul>
+<h2 id="Resource-Constraints-資源限制"><a href="#Resource-Constraints-資源限制" class="headerlink" title="Resource Constraints (資源限制)"></a>Resource Constraints (資源限制)</h2><p>A good architect should understand that there is no absolute good or bad architecture,<br>but the best choice made after considering multiple factors.<br>(一個好的架構設計師，應當能明白，架構沒有絕對的好壞，而是在多種因素的考量下，所做出最好的選擇)</p>
+<h3 id="Deployment-hardware-limitations-and-cost-considerations-部屬硬體限制與成本考量"><a href="#Deployment-hardware-limitations-and-cost-considerations-部屬硬體限制與成本考量" class="headerlink" title="Deployment hardware limitations and cost considerations (部屬硬體限制與成本考量)"></a>Deployment hardware limitations and cost considerations (部屬硬體限制與成本考量)</h3><p>In the semiconductor manufacturing network,<br>the resource limitation of the edge computing system is the primary consideration in the design.<br>(在半導體的製造網路中，邊緣計算系統的資源限制是設計的首要考量)</p>
+<p>This means how customers can obtain the expected value and functions at a reasonable cost.<br>(這意味著客戶如何能以合理的成本，獲得期望的價值與功能)</p>
+<p>For the technical development team, in most cases,<br>(對於技術開發團隊而言，絕大多數情況下)</p>
+<p>The resource limitation of the ground edge computing system is due to the limitation of hardware equipment,<br>which is not like the cloud system, which can expand resources at any time.<br>(地端邊緣計算系統的資源限制是由於硬體設備的限制，這並不像雲端系統那樣，能夠隨時擴展資源)</p>
+<p>Especially in the semiconductor manufacturing network,<br>the selection and configuration of hardware equipment are often strictly restricted.<br>(特別是在半導體製造網路中，硬體設備的選擇和配置往往受到嚴格的限制)</p>
+<h3 id="Choice-of-software-technology-stack-軟體技術棧的選擇"><a href="#Choice-of-software-technology-stack-軟體技術棧的選擇" class="headerlink" title="Choice of software technology stack (軟體技術棧的選擇)"></a>Choice of software technology stack (軟體技術棧的選擇)</h3><p>When choosing a software technology stack,<br>the development team must consider not only the limitations of hardware resources,<br>but also the convenience of deployment and the commercial licensing of the technology stack.<br>(在選擇軟體技術棧時，開發團隊必須考慮到硬體資源的限制外，還必須考量部屬的便利性，與技術棧的商業授權)</p>
+<p>This means that the chosen technology stack must be able to run on limited hardware resources,<br>while also taking into account the cost of commercial licensing.<br>(這意味著選擇的技術棧必須能夠在有限的硬體資源上運行，同時也要考慮到商業授權的成本)</p>
+<p>In most cases,<br>many small and medium-sized development teams may first choose to design edge computing systems based on Docker containerization technology or container orchestration systems such as Kubernetes.<br>(大多數情況下，許多中小型開發團隊，第一時間或許會選擇，基於Docker的容器化技術，或是Kubernetes等容器編排系統，進行邊緣計算系統的設計)</p>
+<p>But this will face several problems<br>(可這將會面臨幾個問題)</p>
+<ul>
+<li><p>These technology stacks usually require high hardware resources, and in semiconductor manufacturing networks,<br>sufficient resources may not be available to support these technologies<br>(這些技術棧通常需要較高的硬體資源，並且在半導體製造網路中，可能無法獲得足夠的資源來支援這些技術)</p>
+</li>
+<li><p>The commercial licensing costs of these technology stacks may exceed the budget,<br>especially when deployed on a large scale<br>(這些技術棧的商業授權成本可能會超出預算，特別是在大規模部署時)</p>
+</li>
+<li><p>The learning curve of these technology stacks may impose an additional burden on the development team,<br>especially in semiconductor manufacturing networks,<br>where the development team may need to get started quickly<br>(這些技術棧的學習曲線可能會對開發團隊造成額外的負擔，特別是在半導體製造網路中，開發團隊可能需要快速上手)</p>
+</li>
+<li><p>The maintenance and updates of these technology stacks may affect the stability of the system,<br>especially in semiconductor manufacturing networks, where system stability is critical<br>(這些技術棧的維護和更新可能會對系統的穩定性造成影響，特別是在半導體製造網路中，系統的穩定性是至關重要的)</p>
+</li>
+<li><p>These technology stacks require extremely high technical capabilities of the subordinate personnel,<br>which will lead to a major difficulty in promoting the business model<br>(這些技術棧對於部屬的人員的技術能力要求極高，這將會導致商業模式推廣的一大困難)</p>
+</li>
+</ul>
+<h3 id="Development-team’s-overall-technical-capabilities-開發團隊整體技術能力"><a href="#Development-team’s-overall-technical-capabilities-開發團隊整體技術能力" class="headerlink" title="Development team’s overall technical capabilities (開發團隊整體技術能力)"></a>Development team’s overall technical capabilities (開發團隊整體技術能力)</h3><p>When designing an edge computing system,<br>the overall technical capabilities of the development team and the maintenance and operation team are also an important consideration.<br>(在設計邊緣計算系統時，開發團隊與維運部屬團隊的整體技術能力也是一個重要的考量因素)</p>
+<p>We must provide a simple and easy-to-use system for front-line maintenance and operation personnel to ensure the stability and reliability of the system.<br>(我們必須為第一線的維運人員提供一個簡單易用的系統，這樣才能確保系統的穩定性和可靠性)</p>
+<p>When we use Docker containerization technology extensively,<br>this will place extremely high demands on the technical capabilities of maintenance and operation personnel<br>(當我們大量使用Docker容器化技術時，這將會對維運人員的技術能力提出極高的要求)</p>
+<p>This may cause maintenance and operation personnel to be unable to effectively manage and maintain the system,<br>thereby affecting the stability and reliability of the system<br>(這可能會導致維運人員無法有效地管理和維護系統，從而影響系統的穩定性和可靠性)</p>
+<h3 id="Business-Considerations-商業考量"><a href="#Business-Considerations-商業考量" class="headerlink" title="Business Considerations (商業考量)"></a>Business Considerations (商業考量)</h3><p>When we are developing a system, business considerations are also an important factor.<br>(當我們在進行一套系統開發時，商業考量也是一個重要的因素)</p>
+<p>Business considerations include but are not limited to<br>(商業考量包含但不限於)</p>
+<ul>
+<li>The system’s commercial licensing costs (系統的商業授權成本)</li>
+<li>The system’s business model (系統的商業模式)</li>
+<li>The system’s commercial promotion (系統的商業推廣)</li>
+<li>The long-term development and maintenance costs for the enterprise (對於企業長遠的開發維護成本)</li>
+<li>The system’s commercial value (系統的商業價值)</li>
+<li>The speed of commercial iteration (商業的迭代速度)</li>
+</ul>
+<h3 id="In-conclusion-結論"><a href="#In-conclusion-結論" class="headerlink" title="In conclusion (結論)"></a>In conclusion (結論)</h3><p>In summary, when designing an edge computing system,<br>many factors must be considered, including hardware resource limitations,<br>the choice of software technology stack,<br>the overall technical capabilities of the development team,<br>and business considerations.<br>(綜上所述，在設計邊緣計算系統時，必須考慮到多種因素，包括硬體資源限制、軟體技術棧的選擇、開發團隊的整體技術能力以及商業考量等)</p>
+<p>Next, this article will use the author’s past experience as an example to explore how to design an edge computing system suitable for restricted environments.<br>(而接下來，本文將以作者過往的經驗為例，探討如何設計一套適用於受限環境下的邊緣計算系統)</p>
+<p>The challenges we will face are as follows<br>(我們將面臨的挑戰如下)</p>
+<ul>
+<li><p>Hardware resource limitations (硬體資源的限制)</p>
+<ul>
+<li>How can the client obtain the expected value and functions at a reasonable cost?<br>Therefore, we can define that the reasonable cost is about a computer device of about 1,000 to 1,500 US dollars,<br>which is approximately equal to<ul>
+<li>CPU: Intel Core i5 或 AMD Ryzen 5</li>
+<li>RAM: 16GB</li>
+<li>Storage: 512GB SSD</li>
+<li>Network: Gigabit Ethernet</li>
+<li>Operating System: Windows 10/11 Pro 或 Linux (But most customers will choose Windows 10/11 Pro for control reasons.)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>The overall technical capabilities of the team (團隊的整體技術能力)</p>
+<ul>
+<li>Field Application Engineer (現場應用工程師)<ul>
+<li>Limited network knowledge, most of them are not even familiar with Windows network settings<br>(有限的網路知識，大多數甚至連Windows的網路設定都不熟悉)</li>
+</ul>
+</li>
+<li>Software Engineer (軟體工程師)<ul>
+<li>The developers in the team only have basic business application development skills and have little knowledge of system architecture, network protocols, operating systems, etc.<br>(在團隊中的開發者，只掌握了基礎的商業應用開發能力，對於系統架構、網路協定、作業系統等知識了解甚少)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>Business considerations (商業考量)</p>
+<ul>
+<li>With limited resources, we must avoid the subsequent development and maintenance expansion problem<br>(在有限的資源下，我們必須避免後續的開發維護膨脹問題)</li>
+<li>Enterprises must be able to quickly promote business models and quickly iterate business needs.<br>(企業卻必須能夠快速地推廣商業模式，並且能夠快速地迭代商業需求)</li>
+</ul>
+</li>
+</ul>
+<p>In fact, such resource limitations are very common in small and medium-sized enterprises.<br>(實際上這樣的資源限制，在中小型企業中是非常常見的)</p>
+<p>Small and medium-sized enterprises cannot have enough professional talents for development and maintenance like large enterprises.<br>(中小企業無法像大型企業一樣，有足夠的專業人才進行開發與維運部屬)</p>
+<p>However, some failed business models lead to the only correct solution,<br>which requires a sufficiently powerful system architecture to support the operation of the business model.<br>(但某些失敗的商業模式，卻導致其唯一正解，需要一個足夠強大的系統架構，才能夠支撐起商業模式的運行)</p>
+<p>Otherwise, corporate resources will continue to be consumed in the development and maintenance of the system,<br>and cannot support the operation of the business model.<br>(否則企業資源將會不斷的平白消耗在系統的開發與維護上，支撐不起商業模式的運行)</p>
+<p>But even so, in this difficult environment,<br>I think we can still design and implement such a system architecture.<br>(但，即便如此，在這種艱難的環境下，我想我們仍能對於這樣的系統架構，進行設計與實現)</p>
+<p>This means that we must design a system with low maintenance costs for the long-term development of the enterprise and can quickly iterate business needs.<br>(這意味著我們必須設計一套，對於企業長遠發展與維護成本較低的系統，並且能夠快速地迭代商業需求)</p>
+<p>And this system must be able to run on limited hardware resources and provide stable and reliable services.<br>(並且這套系統必須能夠在受限的硬體資源上運行，並且能夠提供穩定可靠的服務)</p>
+<p>「 A failed business model does not mean the failure of the system architecture. 」<br>(「失敗的商業模式，不代表系統架構的失敗」)</p>
+<h2 id="Measurement-of-system-architecture-design-系統架構設計的衡量"><a href="#Measurement-of-system-architecture-design-系統架構設計的衡量" class="headerlink" title="Measurement of system architecture design (系統架構設計的衡量)"></a>Measurement of system architecture design (系統架構設計的衡量)</h2><p>Based on the considerations mentioned above, we will now explore how to design an edge computing system architecture suitable for constrained environments.<br>(以前所述的考量為基礎，接下來我們將探討如何設計一套適用於受限環境下的邊緣計算系統架構)</p>
+<h3 id="技術棧-Technology-Stack"><a href="#技術棧-Technology-Stack" class="headerlink" title="技術棧 (Technology Stack)"></a>技術棧 (Technology Stack)</h3><p>We will abandon all containerization technologies and choose a desktop application architecture for development.<br>(我們將捨棄一切容器化技術，並且選擇一套桌面應用程式架構開發)</p>
+<p>This ensures that our system can run on limited hardware resources,<br>and the desktop application not only provides a simple and easy-to-use deployment interface for FAE,<br>but also provides an easy-to-interact interface for customers.<br>(這確保我們的系統能夠在有限的硬體資源上運行，並且桌面應用程式除了為FAE提供簡單易用的部屬操作介面外，也為客戶提供容易交互的介面)</p>
+<p>The main reason why other development frameworks such as Qt were not chosen was to consider the commercial development iteration and maintenance costs.<br>(之所以沒有選用其他如Qt等開發框架，最主要的原因在於考量商業的開發迭代與維護成本)</p>
+<h3 id="Technology-Stack-Overview-技術棧概覽"><a href="#Technology-Stack-Overview-技術棧概覽" class="headerlink" title="Technology Stack Overview (技術棧概覽)"></a>Technology Stack Overview (技術棧概覽)</h3><ul>
+<li><p><strong>Electron</strong>: A framework for building cross-platform desktop applications using web technologies.<br>(Electron：用於使用網頁技術構建跨平台桌面應用程式的框架)</p>
+</li>
+<li><p><strong>Angular</strong>: A platform for building web applications, providing a robust framework for developing the user interface.<br>(Angular：用於構建網頁應用程式的平台，提供了一個強大的框架來開發使用者介面)</p>
+</li>
+<li><p><strong>TypeScript</strong>: A superset of JavaScript that adds static typing, making the code more maintainable and scalable<br>(TypeScript：JavaScript的超集，添加了靜態類型，使代碼更易於維護和擴展)</p>
+</li>
+</ul>
+<p>For more information about integration settings,<br>please refer to my other article <a href="/2025/06/18/electron-with-angular">Electron Development Framework Combining Angular and TypeScript</a></p>
+<h2 id="Architecture-Design-架構的設計"><a href="#Architecture-Design-架構的設計" class="headerlink" title="Architecture Design (架構的設計)"></a>Architecture Design (架構的設計)</h2><p>In the main design, my design concept mainly refers to the Minix operating system architecture design<br>(在主體設計上，我設計理念主要參考了Minix作業系統架構設計)</p>
+<p>The reason why I choose the Microkernel architecture in this case is that I hope to ensure stability as much as possible in such an application scenario<br>(之所以在這種場合選擇Microkernel架構，是因為我希望在這樣的應用場景，盡可能確保穩定性)</p>
+<p>Compared with the Monolithic Kernel architecture, the Microkernel architecture can provide higher stability and maintainability, but it also brings new derivative problems<br>(相對Monolithic Kernel架構來說，Microkernel架構能夠提供更高的穩定性和可維護性，但卻也帶來新的衍伸問題)</p>
+<p>In terms of data processing and communication performance,<br>it is not as good as the Monolithic Kernel architecture,<br>but in this restricted environment and the pursuit of stability,<br>considering the data volume of IoT, there are several characteristics<br>(在資料處理與通訊的效能上不如Monolithic Kernel架構，但在這種受限環境下與對於穩定性的追求，考量到IoT的資料量有幾個特性)</p>
+<ul>
+<li>The data volume is usually small (資料量通常較小)</li>
+<li>The requirements for real-time are lower than those of high-frequency trading systems (對於即時性的要求，相較於高頻交易系統來說較低)</li>
+</ul>
+<p>Under such a premise, the Microkernel architecture was chosen<br>(在這樣的前提下，因此選擇了Microkernel架構)</p>
+<h3 id="Advantages-of-the-Architecture-架構的優勢"><a href="#Advantages-of-the-Architecture-架構的優勢" class="headerlink" title="Advantages of the Architecture (架構的優勢)"></a>Advantages of the Architecture (架構的優勢)</h3><ul>
+<li>High Stability &amp; Fault Tolerance (高穩定性與容錯性)</li>
+<li>Excellent Flexibility &amp; Extensibility (極佳的靈活性與擴展性)</li>
+<li>Easier to Develop &amp; Debug (易於開發與除錯)</li>
+</ul>
+<h3 id="Challenges-of-the-Architecture-架構的挑戰"><a href="#Challenges-of-the-Architecture-架構的挑戰" class="headerlink" title="Challenges of the Architecture (架構的挑戰)"></a>Challenges of the Architecture (架構的挑戰)</h3><ul>
+<li>Performance Overhead &amp; Latency (性能開銷與延遲)</li>
+<li>Complexity of IPC Design</li>
+<li>Overall Design Complexity (整體設計的複雜度)</li>
+</ul>
+<h3 id="Architecture-Design-Summary-架構設計總結"><a href="#Architecture-Design-Summary-架構設計總結" class="headerlink" title="Architecture Design Summary (架構設計總結)"></a>Architecture Design Summary (架構設計總結)</h3><p>The greatest value of this architecture is not to “imitate” the operating system,<br>but to build a more advanced “Application Operating Platform” or “Software-Defined Virtual Machine” on top of the operating system that is tailored for application scenarios.</p>
+<p>The core design of this system architecture refers to the Minix operating system, which is famous for its Microkernel concept.</p>
+<p>It aims to provide an extremely stable operating foundation for specific Edge Computing and IoT application scenarios.</p>
+<p>The choice of this architecture is based on a deep trade-off of scenario requirements.</p>
+<p>In typical IoT applications, the amount of data transmission is relatively small,<br>and the requirements for immediacy are not as strict as those for high-frequency trading systems.</p>
+<p>This makes the long-term stability and maintainability of the system a higher priority than extreme performance.</p>
+<p>However, we also face the challenges faced by this architecture, which are mainly reflected in the performance overhead and potential delays caused by frequent inter-process communication (IPC),<br>as well as the overall design complexity caused by managing many independent services.</p>
+<p>In summary, this architecture is a well-thought-out engineering decision.</p>
+<p>It deliberately sacrifices some performance in exchange for stability, security,<br>and flexibility that are critical in edge and IoT environments.</p>
+<p>This makes it one of the ideal solutions that can operate reliably for a long time in harsh environments while being flexible to evolve.</p>
+<hr>
+<p>這套架構最大的價值所在</p>
+<p>並非在「模仿」作業系統，而是在作業系統之上，建立一個更進階的、專為應用場景量身打造的「應用程式作業平台 (Application Operating Platform)」或「軟體定義的虛擬主機 (Software-Defined Virtual Machine)」。</p>
+<p>本系統架構的核心設計，參考了以Microkernel理念著稱的 Minix 作業系統</p>
+<p>旨在為特定的Edge Computing及IoT應用場景提供一個極致穩定的運行基礎</p>
+<p>此架構的選擇，是基於對場景需求的深度權衡，在典型的IoT應用中，數據傳輸量相對較小，且對即時性的要求不如高頻交易等系統嚴苛，這使得系統的長期穩定性與可維護性成為比極致性能更優先的考量</p>
+<p>然而，我們也正視此架構所面臨的挑戰，主要體現在因頻繁的進程間通信（IPC）所帶來的性能開銷與潛在延遲，以及管理眾多獨立服務所引發的整體設計複雜度</p>
+<p>綜上所述，本架構是一項深思熟慮的工程決策</p>
+<p>它刻意犧牲了部分性能，以換取在邊緣與物聯網環境中至關重要的穩定性、安全性與靈活性</p>
+<p>這使得它成為一個能夠在嚴苛環境下長期可靠運作，同時又能靈活演進的理想解決方案之一</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Electron/" rel="tag"># Electron</a>
+              <a href="/tags/Angular/" rel="tag"># Angular</a>
+              <a href="/tags/TypeScript/" rel="tag"># TypeScript</a>
+              <a href="/tags/Desktop-App/" rel="tag"># Desktop App</a>
+              <a href="/tags/Electron-Forge/" rel="tag"># Electron-Forge</a>
+              <a href="/tags/IoT/" rel="tag"># IoT</a>
+              <a href="/tags/System-Design/" rel="tag"># System Design</a>
+              <a href="/tags/Edge-Computing/" rel="tag"># Edge Computing</a>
+              <a href="/tags/Minix/" rel="tag"># Minix</a>
+              <a href="/tags/Wafer-Manufacture/" rel="tag"># Wafer Manufacture</a>
+              <a href="/tags/Network-Design/" rel="tag"># Network Design</a>
+              <a href="/tags/Operating-System-Design/" rel="tag"># Operating System Design</a>
+              <a href="/tags/P2P-Network/" rel="tag"># P2P Network</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/06/19/timespace-db-with-quantum-computing/" rel="prev" title="Beyond Time Series — My Conception of the Architecture of the Next-Generation Spacetime Database "TimeSpace"">
+      <i class="fa fa-chevron-left"></i> Beyond Time Series — My Conception of the Architecture of the Next-Generation Spacetime Database "TimeSpace"
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Edge-Computing-System-Under-Wafer-Manufacture-Network"><span class="nav-number">1.</span> <span class="nav-text">Edge Computing System Under Wafer Manufacture Network</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%82%8A%E7%B7%A3%E8%A8%88%E7%AE%97%E7%B3%BB%E7%B5%B1%E5%9C%A8%E5%8D%8A%E5%B0%8E%E9%AB%94%E8%A3%BD%E9%80%A0%E7%B6%B2%E7%B5%A1%E4%B8%AD%E7%9A%84%E8%A8%AD%E8%A8%88"><span class="nav-number">2.</span> <span class="nav-text">邊緣計算系統在半導體製造網絡中的設計</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Outline"><span class="nav-number">3.</span> <span class="nav-text">Outline</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Architecture-diagram"><span class="nav-number">4.</span> <span class="nav-text">Architecture diagram</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Design-Considerations-And-Challenges-%E8%A8%AD%E8%A8%88%E8%80%83%E9%87%8F%E8%88%87%E6%8C%91%E6%88%B0"><span class="nav-number">5.</span> <span class="nav-text">Design Considerations And Challenges (設計考量與挑戰)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Resource-Constraints-%E8%B3%87%E6%BA%90%E9%99%90%E5%88%B6"><span class="nav-number">6.</span> <span class="nav-text">Resource Constraints (資源限制)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Deployment-hardware-limitations-and-cost-considerations-%E9%83%A8%E5%B1%AC%E7%A1%AC%E9%AB%94%E9%99%90%E5%88%B6%E8%88%87%E6%88%90%E6%9C%AC%E8%80%83%E9%87%8F"><span class="nav-number">6.1.</span> <span class="nav-text">Deployment hardware limitations and cost considerations (部屬硬體限制與成本考量)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Choice-of-software-technology-stack-%E8%BB%9F%E9%AB%94%E6%8A%80%E8%A1%93%E6%A3%A7%E7%9A%84%E9%81%B8%E6%93%87"><span class="nav-number">6.2.</span> <span class="nav-text">Choice of software technology stack (軟體技術棧的選擇)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Development-team%E2%80%99s-overall-technical-capabilities-%E9%96%8B%E7%99%BC%E5%9C%98%E9%9A%8A%E6%95%B4%E9%AB%94%E6%8A%80%E8%A1%93%E8%83%BD%E5%8A%9B"><span class="nav-number">6.3.</span> <span class="nav-text">Development team’s overall technical capabilities (開發團隊整體技術能力)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Business-Considerations-%E5%95%86%E6%A5%AD%E8%80%83%E9%87%8F"><span class="nav-number">6.4.</span> <span class="nav-text">Business Considerations (商業考量)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#In-conclusion-%E7%B5%90%E8%AB%96"><span class="nav-number">6.5.</span> <span class="nav-text">In conclusion (結論)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Measurement-of-system-architecture-design-%E7%B3%BB%E7%B5%B1%E6%9E%B6%E6%A7%8B%E8%A8%AD%E8%A8%88%E7%9A%84%E8%A1%A1%E9%87%8F"><span class="nav-number">7.</span> <span class="nav-text">Measurement of system architecture design (系統架構設計的衡量)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%80%E8%A1%93%E6%A3%A7-Technology-Stack"><span class="nav-number">7.1.</span> <span class="nav-text">技術棧 (Technology Stack)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Technology-Stack-Overview-%E6%8A%80%E8%A1%93%E6%A3%A7%E6%A6%82%E8%A6%BD"><span class="nav-number">7.2.</span> <span class="nav-text">Technology Stack Overview (技術棧概覽)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Architecture-Design-%E6%9E%B6%E6%A7%8B%E7%9A%84%E8%A8%AD%E8%A8%88"><span class="nav-number">8.</span> <span class="nav-text">Architecture Design (架構的設計)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Advantages-of-the-Architecture-%E6%9E%B6%E6%A7%8B%E7%9A%84%E5%84%AA%E5%8B%A2"><span class="nav-number">8.1.</span> <span class="nav-text">Advantages of the Architecture (架構的優勢)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Challenges-of-the-Architecture-%E6%9E%B6%E6%A7%8B%E7%9A%84%E6%8C%91%E6%88%B0"><span class="nav-number">8.2.</span> <span class="nav-text">Challenges of the Architecture (架構的挑戰)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Architecture-Design-Summary-%E6%9E%B6%E6%A7%8B%E8%A8%AD%E8%A8%88%E7%B8%BD%E7%B5%90"><span class="nav-number">8.3.</span> <span class="nav-text">Architecture Design Summary (架構設計總結)</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">teddy1565</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-name">標籤</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">teddy1565</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 強力驅動
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
