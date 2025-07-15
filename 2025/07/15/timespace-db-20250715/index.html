@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"teddy1565.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="厭倦了時序資料庫？讓我們聊聊如何為數據建立一個「時間宇宙」我們身處一個數據以秒、毫秒甚至奈秒為單位不斷產生的時代。從物聯網感測器到金融市場的每一次脈動，我們試圖用資料庫捕捉這個世界的節奏 InfluxDB 讓我們用標籤(tags)和欄位(fields)來度量世界 TimescaleDB 則巧妙地將時間維度嫁接到關聯式數據的巨人——PostgreSQL 的肩膀上 它們都非常出色，但在某些時刻，您是否">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Beyond Time Series — &quot;TimeSpace&quot; Database 第一階段技術與概念簡述">
+<meta property="og:url" content="https://teddy1565.github.io/2025/07/15/timespace-db-20250715/index.html">
+<meta property="og:site_name" content="JING-TING XIONG Blog">
+<meta property="og:description" content="厭倦了時序資料庫？讓我們聊聊如何為數據建立一個「時間宇宙」我們身處一個數據以秒、毫秒甚至奈秒為單位不斷產生的時代。從物聯網感測器到金融市場的每一次脈動，我們試圖用資料庫捕捉這個世界的節奏 InfluxDB 讓我們用標籤(tags)和欄位(fields)來度量世界 TimescaleDB 則巧妙地將時間維度嫁接到關聯式數據的巨人——PostgreSQL 的肩膀上 它們都非常出色，但在某些時刻，您是否">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2025-07-15T11:00:00.000Z">
+<meta property="article:modified_time" content="2025-07-15T11:02:06.433Z">
+<meta property="article:author" content="teddy1565">
+<meta property="article:tag" content="time">
+<meta property="article:tag" content="time series">
+<meta property="article:tag" content="database">
+<meta property="article:tag" content="vector">
+<meta property="article:tag" content="vector database">
+<meta property="article:tag" content="quantum">
+<meta property="article:tag" content="quantum computing">
+<meta property="article:tag" content="spacetime">
+<meta property="article:tag" content="machine learning">
+<meta property="article:tag" content="math">
+<meta property="article:tag" content="physics">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://teddy1565.github.io/2025/07/15/timespace-db-20250715/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-TW'
+  };
+</script>
+
+  <title>Beyond Time Series — "TimeSpace" Database 第一階段技術與概念簡述 | JING-TING XIONG Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切換導航欄">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">JING-TING XIONG Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首頁</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>關於</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>標籤</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分類</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>歸檔</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-TW">
+    <link itemprop="mainEntityOfPage" href="https://teddy1565.github.io/2025/07/15/timespace-db-20250715/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="teddy1565">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="JING-TING XIONG Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Beyond Time Series — "TimeSpace" Database 第一階段技術與概念簡述
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">發表於</span>
+              
+
+              <time title="創建時間：2025-07-15 19:00:00 / 修改時間：19:02:06" itemprop="dateCreated datePublished" datetime="2025-07-15T19:00:00+08:00">2025-07-15</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="厭倦了時序資料庫？讓我們聊聊如何為數據建立一個「時間宇宙」"><a href="#厭倦了時序資料庫？讓我們聊聊如何為數據建立一個「時間宇宙」" class="headerlink" title="厭倦了時序資料庫？讓我們聊聊如何為數據建立一個「時間宇宙」"></a>厭倦了時序資料庫？讓我們聊聊如何為數據建立一個「時間宇宙」</h2><p>我們身處一個數據以秒、毫秒甚至奈秒為單位不斷產生的時代。從物聯網感測器到金融市場的每一次脈動，我們試圖用資料庫捕捉這個世界的節奏</p>
+<p>InfluxDB 讓我們用標籤(tags)和欄位(fields)來度量世界</p>
+<p>TimescaleDB 則巧妙地將時間維度嫁接到關聯式數據的巨人——PostgreSQL 的肩膀上</p>
+<p>它們都非常出色，但在某些時刻，您是否也曾感到一絲侷限？</p>
+<p>當我們不僅想記錄「指標」，還想捕捉指標背後的整個系統狀態時；當我們不僅想追溯「時間」，還想探尋數據之間的因果鏈時</p>
+<p>當我們希望數據不僅是唯讀的紀錄，而是能像 Git 一樣開枝散葉、進行版本控制時……我們需要的，可能不再是另一個時序資料庫 (Time-Series Database)，而是一個全新的思維典範</p>
+<p>今天，我想與您分享一個名為「TimeSpace DB」的專案構想</p>
+<p>這不僅是一個資料庫，更是一個用來建模、追溯、甚至模擬複雜世界的引擎</p>
+<span id="more"></span>
+
+<h2 id="簡介"><a href="#簡介" class="headerlink" title="簡介"></a>簡介</h2><p>可以參考上一篇概念文章 <a href="/2025/06/19/timespace-db-with-quantum-computing">Beyond Time Series — My Conception of the Architecture of the Next-Generation Spacetime Database “TimeSpace”</a></p>
+<p>文章主要使用Google Gemini Pro 讀取我的原始手稿與原始碼，產生的文案 (抱歉真的沒有太多時間能讓我自己寫，有機會未來再補上)</p>
+<h2 id="核心世界觀：從時間線到時間宇宙"><a href="#核心世界觀：從時間線到時間宇宙" class="headerlink" title="核心世界觀：從時間線到時間宇宙"></a>核心世界觀：從時間線到時間宇宙</h2><p>這個專案的核心，源於一套自成體系的數據結構，它重新定義了我們看待數據的方式：</p>
+<p>Time Universe (時間宇宙): 想像一個完整的領域，例如一座智慧工廠或一個金融市場。這是我們觀察的頂層世界。</p>
+<p>Time Space (時間空間): 在這個宇宙中，存在著如「溫度」、「壓力」、「股價」等不同的物理法則。每一個法則，就是一個獨立的 Time Space。</p>
+<p>Time Line (時間線): 宇宙中的每一個獨立個體，如一台機器、一支股票，都在各自的 Time Space 中，沿著時間軸繪製出自己的生命軌跡——這就是 Time Line。</p>
+<p>Time Frame (時間框架): 如果我們在任意時間點按下暫停鍵，整個宇宙所有 Time Line 在這一刻的狀態快照，便構成了一個 Time Frame。</p>
+<p>看到了嗎？這套模型超越了單純的「key-value」或「table-row」，它在嘗試構建一個真實世界的數位孿生 (Digital Twin)</p>
+<h2 id="殺手級亮點：它為何與眾不同？"><a href="#殺手級亮點：它為何與眾不同？" class="headerlink" title="殺手級亮點：它為何與眾不同？"></a>殺手級亮點：它為何與眾不同？</h2><p>如果說宏大的世界觀是其靈魂，那麼具體的工程設計就是其骨骼</p>
+<p>這個專案有幾個令人興奮的特點，使其在時序資料庫的紅海中，開闢出一條全新的航道</p>
+<h3 id="1-數據的「Git」：內建的版本控制與時間分岔"><a href="#1-數據的「Git」：內建的版本控制與時間分岔" class="headerlink" title="1. 數據的「Git」：內建的版本控制與時間分岔"></a>1. 數據的「Git」：內建的版本控制與時間分岔</h3><pre><code>在我的原始手稿中，每一個數據點 (Time Point) 都設計了 prev-version 和 next_version 的指標
+
+當任何數據需要被「修改」時，系統並非覆蓋它，而是產生一個新的時間分支
+
+這意味著什麼？這意味著我們擁有了一個為數據而生的 Git
+
+這在以下領域具有顛覆性的商業價值
+
+- 高度監管行業：金融、醫療或法務領域，任何數據的變更都需要留下完整的審計軌跡 (Audit Trail)
+- AI/MLOps：告別散亂的 CSV 和 pickle 文件，數據集與模型的每一個版本都能在資料庫層面被原生管理
+- 「What-if」模擬分析：企業可以在不影響主數據的情況下，輕鬆創建一個「假設」時間線，進行風險評估和商業預測
+</code></pre>
+<h3 id="2-不止於時序，更關乎因果：時空圖譜的雛形"><a href="#2-不止於時序，更關乎因果：時空圖譜的雛形" class="headerlink" title="2. 不止於時序，更關乎因果：時空圖譜的雛形"></a>2. 不止於時序，更關乎因果：時空圖譜的雛形</h3><p>除了時間維度上的前後關係，手稿中還設計了 Up/Down/Prev/Next 等指向「相鄰」數據點的 Offset</p>
+<p>這讓數據點之間形成了網狀的連接</p>
+<p>這使得我們的查詢，可以從單一的「時間序列」升維到「時空圖譜」</p>
+<p><strong>我們不僅能問「這台機器過去一小時的溫度變化？」，更能探索「當 A 機器的壓力劇增時，與它相鄰的 B、C 兩台機器的震動頻率發生了什麼連鎖反應？</strong></p>
+<p>這為<code>複雜系統的根因分析 (Root Cause Analysis)</code> 提供了強大的武器</p>
+<h2 id="性能如何？一個驚人的初步成績"><a href="#性能如何？一個驚人的初步成績" class="headerlink" title="性能如何？一個驚人的初步成績"></a>性能如何？一個驚人的初步成績</h2><p>理論聽起來很棒，但現實世界的性能才是硬道理</p>
+<p>在一個早期的原型測試中，我在一塊普通的 WD 7200轉 HDD 硬碟上（並且關閉了作業系統的檔案快取），從一千萬筆離散資料（約1GB）中，隨機讀取兩百萬筆數據點</p>
+<pre><code><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">=========================================</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">read test done!</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">total process 2000000 point!</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">total use: 1.714000 Sec</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">-----------------------------------------</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">(Cache Hits): 39868</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">(Disk Reads): 6437</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">=========================================</span><br></pre></td></tr></table></figure>
+</code></pre>
+<p>測試環境與設定：</p>
+<ul>
+<li><p>硬體: 一塊普通的 Western Digital 藍標 7200轉 HDD 機械硬碟。我特意選擇傳統硬碟而非 SSD，是為了放大 I/O 尋址的延遲，更能考驗演算法的效率。</p>
+</li>
+<li><p>數據集: 總共一千萬筆離散的 Time Point 資料，總大小約 1GB。這些數據點被故意打散並儲存在不同的 Block 中，模擬真實世界中數據寫入的隨機性。</p>
+</li>
+<li><p>作業系統快取: 為了排除記憶體快取的干擾，測試全程關閉了作業系統層級的 File System Cache。這意味著每一次讀取，都強制要求磁頭進行實實在在的物理尋道。</p>
+</li>
+<li><p>測試任務: 從這一千萬筆離散資料中，隨機挑選出兩百萬筆完全不連續的 Time Point 進行讀取。</p>
+</li>
+</ul>
+<p>測試的核心：驗證批次處理 (Batch Mode) 的效能</p>
+<p>如果用最暴力的方法，讀取兩百萬筆離散數據，意味著需要進行兩百萬次獨立的 I/O 操作，在機械硬碟上這將是災難性的</p>
+<p>而我的核心演算法是這樣運作的：</p>
+<ul>
+<li><p>收集任務 (Collect): 首先，程式會遍歷這兩百萬個讀取任務，分析它們分別儲存在哪些物理 Block 中。</p>
+</li>
+<li><p>去重與排序 (Deduplicate &amp; Sort): 程式發現，這兩百萬個點，實際上只分散在 6,437 個獨立的 Block 裡。它將這些 Block ID 去重並進行排序。</p>
+</li>
+<li><p>批次讀取 (Batch Read): 接著，程式以最高效的方式，一次性、循序地將這 6,437 個 Block 讀入記憶體。</p>
+</li>
+<li><p>記憶體中分發 (Distribute in Memory): 最後，在記憶體中將讀取的數據塊分發給最初的兩百萬個讀取請求。</p>
+</li>
+</ul>
+<p>結果如何？</p>
+<p>總耗時：1.714 秒</p>
+<p>從日誌中可以看到，實際只發生了 6,437 次磁碟讀取（Disk Reads），而另外近四萬次的請求，則是因為數據恰好在剛被讀入的同一個 Block 中而被滿足（Cache Hits，這裡的 Cache 指的是應用層的快取，非 OS 快取）。</p>
+<p>這個成績有力地證明了，即使面對物理儲存上極度碎片化的數據，透過智慧的批次處理和 I/O 優化，依然可以實現高效的隨機存取。這也為「TimeSpace DB」上層複雜的邏輯模型和查詢能力，打下了堅實的性能地基。</p>
+<h2 id="最後，一個關於未來的狂想：它與量子計算有什麼關係？"><a href="#最後，一個關於未來的狂想：它與量子計算有什麼關係？" class="headerlink" title="最後，一個關於未來的狂想：它與量子計算有什麼關係？"></a>最後，一個關於未來的狂想：它與量子計算有什麼關係？</h2><p>細心的讀者可能已經發現，我的專案頁面URL中包含了「quantum-computing」的字樣。</p>
+<p>這不是噱頭，而是指向這個專案最終極的哲學思想和未來願景。</p>
+<p>需要澄清的是，「TimeSpace DB」並不是一個需要運行在量子電腦上的資料庫。</p>
+<p>恰恰相反，它試圖從量子力學的恢弘思想中汲取靈感，來解決當下經典計算中的複雜問題。</p>
+<p>這份靈感主要來自兩個方面：</p>
+<ol>
+<li><p>費曼的路徑積分 (Path Integral)：一種全新的查詢優化哲學</p>
+<p> 在經典世界中，我們如何找到一個數據？就像查地圖一樣，我們透過索引（B-Tree, LSM-Tree等）找到一條通往目標的「唯一正確路徑」。</p>
+<p> 但在量子力學中，一個粒子從A點到B點，並不是只走一條路。</p>
+<p> 根據物理學家理查・費曼的「路徑積分」理論，它會同時探索所有可能的路徑</p>
+<p> 每一條路徑都有一個對應的「相位」，絕大多數路徑的相位會因彼此不同而相互干涉、抵銷掉</p>
+<p> 最終，我們觀測到的那條宏觀路徑（也就是經典物理中的最短路徑），正是那些相位相似、產生「建設性干涉」的路徑疊加的結果</p>
+<p> 這個思想給了我巨大的啟發</p>
+<p> 如果將其類比到資料庫查詢：當一個複雜的查詢請求進來時，我們是否也能像大自然一樣，不去預設唯一的「最優解」，而是讓查詢優化器在概念上「探索」所有可能的數據獲取路徑？</p>
+<p> 例如，是先掃描時間戳，還是先過濾 Time Space？是走索引，還是直接批次讀取？</p>
+<p> 「TimeSpace DB」的遠期目標，就是構建一個能模擬這種「路徑積分」思想的查詢引擎</p>
+<p> 最優的查詢計畫，將不再是基於生硬規則的選擇，而是從無數種可能性中「干涉疊加」後，自然湧現出的、I/O成本最低的執行路徑</p>
+</li>
+<li><p>量子糾纏 (Quantum Entanglement)：數據關係的終極形態</p>
+<p> 我的手稿中提到了entangled-parther 和多維度的Offset 指標等設計</p>
+<p> 這其實是在借用「量子糾纏」的概念來定義數據之間的關係</p>
+<p> 量子糾纏描述了兩個粒子之間一種深刻的連結，無論相隔多遠，對其中一個的測量會瞬間影響另一個</p>
+<p> 在「TimeSpace DB」中，這意味著數據點不再是孤立的</p>
+<p> 一個 Time Point 的狀態變化，會透過預先定義好的「糾纏關係」，即時地、確定地影響到與它關聯的其他數據點</p>
+<p> 這使得資料庫本身就能原生理解和維護一個複雜系統的內部關聯性，而不需要應用層去處理繁瑣的邏輯</p>
+</li>
+</ol>
+<h2 id="一個量子啟發的未來"><a href="#一個量子啟發的未來" class="headerlink" title="一個量子啟發的未來"></a>一個量子啟發的未來</h2><p>總結來說，「TimeSpace DB」的目標是成為一個 <strong>量子啟發 (Quantum-Inspired)」的資料庫，它將量子世界中關於可能性疊加、干涉、糾纏</strong> 等深刻的物理規律，轉化為處理複雜數據關係和優化查詢路徑的工程思想</p>
+<p>這不僅讓它在處理當前的複雜系統時具備了獨特的架構優勢，更為遙遠的未來埋下伏筆——當真正的量子計算時代來臨時，一個從設計哲學上就與其同頻的資料庫架構，或許能更無縫地擁抱那股顛覆性的計算力量</p>
+<h2 id="結語：為下一個世代的數據挑戰而生"><a href="#結語：為下一個世代的數據挑戰而生" class="headerlink" title="結語：為下一個世代的數據挑戰而生"></a>結語：為下一個世代的數據挑戰而生</h2><p>「TimeSpace DB」的目標，並非要取代 InfluxDB 或 TimescaleDB 在監控領域的地位</p>
+<p>它的戰場，在於那些更複雜、更需要追溯、更看重數據之間內在關聯性的高價值領域：工業4.0、金融科技、前沿科學研究</p>
+<p>這個專案仍處於早期階段，充滿了挑戰與未知</p>
+<p>但它提供了一個令人興奮的可能性：也許我們記錄數據的方式，可以從單純的日誌，演進為真正地去理解和模擬我們所在的這個複雜而迷人的世界</p>
+<p>如果您對這個想法感興趣，歡迎來信<code>teddy1565@gmail.com</code>，一同探討</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/time/" rel="tag"># time</a>
+              <a href="/tags/time-series/" rel="tag"># time series</a>
+              <a href="/tags/database/" rel="tag"># database</a>
+              <a href="/tags/vector/" rel="tag"># vector</a>
+              <a href="/tags/vector-database/" rel="tag"># vector database</a>
+              <a href="/tags/quantum/" rel="tag"># quantum</a>
+              <a href="/tags/quantum-computing/" rel="tag"># quantum computing</a>
+              <a href="/tags/spacetime/" rel="tag"># spacetime</a>
+              <a href="/tags/machine-learning/" rel="tag"># machine learning</a>
+              <a href="/tags/math/" rel="tag"># math</a>
+              <a href="/tags/physics/" rel="tag"># physics</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/06/30/iot-edge-system/" rel="prev" title="Edge Computing System Under Wafer Manufacture Network Design">
+      <i class="fa fa-chevron-left"></i> Edge Computing System Under Wafer Manufacture Network Design
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目錄
+        </li>
+        <li class="sidebar-nav-overview">
+          本站概要
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%AD%E5%80%A6%E4%BA%86%E6%99%82%E5%BA%8F%E8%B3%87%E6%96%99%E5%BA%AB%EF%BC%9F%E8%AE%93%E6%88%91%E5%80%91%E8%81%8A%E8%81%8A%E5%A6%82%E4%BD%95%E7%82%BA%E6%95%B8%E6%93%9A%E5%BB%BA%E7%AB%8B%E4%B8%80%E5%80%8B%E3%80%8C%E6%99%82%E9%96%93%E5%AE%87%E5%AE%99%E3%80%8D"><span class="nav-number">1.</span> <span class="nav-text">厭倦了時序資料庫？讓我們聊聊如何為數據建立一個「時間宇宙」</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B0%A1%E4%BB%8B"><span class="nav-number">2.</span> <span class="nav-text">簡介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%B8%96%E7%95%8C%E8%A7%80%EF%BC%9A%E5%BE%9E%E6%99%82%E9%96%93%E7%B7%9A%E5%88%B0%E6%99%82%E9%96%93%E5%AE%87%E5%AE%99"><span class="nav-number">3.</span> <span class="nav-text">核心世界觀：從時間線到時間宇宙</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AE%BA%E6%89%8B%E7%B4%9A%E4%BA%AE%E9%BB%9E%EF%BC%9A%E5%AE%83%E7%82%BA%E4%BD%95%E8%88%87%E7%9C%BE%E4%B8%8D%E5%90%8C%EF%BC%9F"><span class="nav-number">4.</span> <span class="nav-text">殺手級亮點：它為何與眾不同？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%95%B8%E6%93%9A%E7%9A%84%E3%80%8CGit%E3%80%8D%EF%BC%9A%E5%85%A7%E5%BB%BA%E7%9A%84%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6%E8%88%87%E6%99%82%E9%96%93%E5%88%86%E5%B2%94"><span class="nav-number">4.1.</span> <span class="nav-text">1. 數據的「Git」：內建的版本控制與時間分岔</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E4%B8%8D%E6%AD%A2%E6%96%BC%E6%99%82%E5%BA%8F%EF%BC%8C%E6%9B%B4%E9%97%9C%E4%B9%8E%E5%9B%A0%E6%9E%9C%EF%BC%9A%E6%99%82%E7%A9%BA%E5%9C%96%E8%AD%9C%E7%9A%84%E9%9B%9B%E5%BD%A2"><span class="nav-number">4.2.</span> <span class="nav-text">2. 不止於時序，更關乎因果：時空圖譜的雛形</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%A6%82%E4%BD%95%EF%BC%9F%E4%B8%80%E5%80%8B%E9%A9%9A%E4%BA%BA%E7%9A%84%E5%88%9D%E6%AD%A5%E6%88%90%E7%B8%BE"><span class="nav-number">5.</span> <span class="nav-text">性能如何？一個驚人的初步成績</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E5%BE%8C%EF%BC%8C%E4%B8%80%E5%80%8B%E9%97%9C%E6%96%BC%E6%9C%AA%E4%BE%86%E7%9A%84%E7%8B%82%E6%83%B3%EF%BC%9A%E5%AE%83%E8%88%87%E9%87%8F%E5%AD%90%E8%A8%88%E7%AE%97%E6%9C%89%E4%BB%80%E9%BA%BC%E9%97%9C%E4%BF%82%EF%BC%9F"><span class="nav-number">6.</span> <span class="nav-text">最後，一個關於未來的狂想：它與量子計算有什麼關係？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E5%80%8B%E9%87%8F%E5%AD%90%E5%95%9F%E7%99%BC%E7%9A%84%E6%9C%AA%E4%BE%86"><span class="nav-number">7.</span> <span class="nav-text">一個量子啟發的未來</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B5%90%E8%AA%9E%EF%BC%9A%E7%82%BA%E4%B8%8B%E4%B8%80%E5%80%8B%E4%B8%96%E4%BB%A3%E7%9A%84%E6%95%B8%E6%93%9A%E6%8C%91%E6%88%B0%E8%80%8C%E7%94%9F"><span class="nav-number">8.</span> <span class="nav-text">結語：為下一個世代的數據挑戰而生</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">teddy1565</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">文章</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">61</span>
+        <span class="site-state-item-name">標籤</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">teddy1565</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 強力驅動
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
